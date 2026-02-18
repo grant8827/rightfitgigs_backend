@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Npgsql;
 using RightFitGigs.Data;
 using RightFitGigs.Models;
 
@@ -10,18 +11,53 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var frontendUrl = builder.Configuration["FRONTEND_URL"];
+var defaultFrontendUrl = "https://rightfitgigsfrontendr.up.railway.app";
+var allowedOrigins = new[]
+{
+    frontendUrl,
+    defaultFrontendUrl,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+}
+.Where(origin => !string.IsNullOrWhiteSpace(origin))
+.Select(origin => origin!.Trim().TrimEnd('/'))
+.Distinct(StringComparer.OrdinalIgnoreCase)
+.ToArray();
+
 // Add Entity Framework
+var databaseUrl = builder.Configuration["DATABASE_URL"];
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+var hasPostgresConnection = !string.IsNullOrWhiteSpace(databaseUrl) ||
+                            (!string.IsNullOrWhiteSpace(defaultConnection) &&
+                             (defaultConnection.Contains("Host=", StringComparison.OrdinalIgnoreCase) ||
+                              defaultConnection.Contains("Username=", StringComparison.OrdinalIgnoreCase)));
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
-                     "Data Source=rightfitgigs.db")
-           .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+{
+    if (hasPostgresConnection)
+    {
+        var postgresConnection = !string.IsNullOrWhiteSpace(databaseUrl)
+            ? ConvertDatabaseUrlToNpgsqlConnectionString(databaseUrl)
+            : defaultConnection!;
+
+        options.UseNpgsql(postgresConnection);
+    }
+    else
+    {
+        options.UseSqlite(defaultConnection ?? "Data Source=rightfitgigs.db");
+    }
+
+    options.ConfigureWarnings(warnings =>
+        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
 
 // Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -110,3 +146,26 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+static string ConvertDatabaseUrlToNpgsqlConnectionString(string databaseUrl)
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':', 2);
+
+    if (userInfo.Length != 2)
+    {
+        throw new InvalidOperationException("DATABASE_URL is missing username or password.");
+    }
+
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Database = uri.AbsolutePath.Trim('/'),
+        Username = Uri.UnescapeDataString(userInfo[0]),
+        Password = Uri.UnescapeDataString(userInfo[1]),
+        SslMode = SslMode.Require
+    };
+
+    return builder.ConnectionString;
+}
