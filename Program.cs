@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.FileProviders;
 using Npgsql;
 using RightFitGigs.Data;
@@ -95,7 +97,28 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.Migrate();
+    if (hasPostgresConnection)
+    {
+        var connection = context.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            connection.Open();
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT to_regclass('public.\"Users\"') IS NOT NULL";
+        var usersTableExists = Convert.ToBoolean(command.ExecuteScalar() ?? false);
+
+        if (!usersTableExists)
+        {
+            var databaseCreator = context.GetService<IRelationalDatabaseCreator>();
+            databaseCreator.CreateTables();
+        }
+    }
+    else
+    {
+        context.Database.Migrate();
+    }
 
     var testEmployerEmail = "employer.test@example.com";
     var existingEmployer = context.Users.FirstOrDefault(u => u.Email == testEmployerEmail);
