@@ -61,7 +61,18 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(origin =>
+              {
+                  // Check if the origin is in the configured list
+                  var isAllowed = allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+
+                  // Also allow any localhost origin for local development (e.g., Flutter web)
+                  if (!isAllowed && (origin.StartsWith("http://localhost:") || origin.StartsWith("http://127.0.0.1:")))
+                  {
+                      isAllowed = true;
+                  }
+                  return isAllowed;
+              })
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
