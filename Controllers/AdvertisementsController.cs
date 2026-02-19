@@ -144,8 +144,8 @@ namespace RightFitGigs.Controllers
 
                 var advertisement = new Advertisement
                 {
-                    Title = string.IsNullOrWhiteSpace(dto.Title) ? "Advertisement" : dto.Title,
-                    Description = dto.Description ?? string.Empty,
+                    Title = dto.Title?.Trim() ?? string.Empty,
+                    Description = dto.Description?.Trim() ?? string.Empty,
                     Type = adType,
                     FileUrl = fileUrl,
                     FileName = originalFileName,
@@ -190,11 +190,11 @@ namespace RightFitGigs.Controllers
                 }
 
                 // Update fields
-                if (!string.IsNullOrEmpty(dto.Title))
-                    advertisement.Title = dto.Title;
+                if (dto.Title != null)
+                    advertisement.Title = dto.Title.Trim();
 
                 if (dto.Description != null)
-                    advertisement.Description = dto.Description;
+                    advertisement.Description = dto.Description.Trim();
 
                 if (!string.IsNullOrEmpty(dto.Platform))
                     advertisement.Platform = dto.Platform;
