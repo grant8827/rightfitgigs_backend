@@ -216,7 +216,7 @@ namespace RightFitGigs.Controllers
                     {
                         Type = "Notification",
                         n.Id,
-                        Description = n.Message,
+                        Description = n.Message ?? "",
                         Timestamp = n.CreatedDate
                     })
                     .ToListAsync();

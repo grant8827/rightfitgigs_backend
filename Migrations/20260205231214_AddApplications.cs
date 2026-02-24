@@ -52,56 +52,56 @@ namespace backend.Migrations
                 keyColumn: "Id",
                 keyValue: "company-1-tech",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 23, 12, 13, 314, DateTimeKind.Utc).AddTicks(1930), new DateTime(2026, 2, 5, 23, 12, 13, 314, DateTimeKind.Utc).AddTicks(1930) });
+                values: new object[] { "2026-02-05T23:12:13.3141930Z", "2026-02-05T23:12:13.3141930Z" });
 
             migrationBuilder.UpdateData(
                 table: "Companies",
                 keyColumn: "Id",
                 keyValue: "company-2-mobile",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 23, 12, 13, 314, DateTimeKind.Utc).AddTicks(6420), new DateTime(2026, 2, 5, 23, 12, 13, 314, DateTimeKind.Utc).AddTicks(6420) });
+                values: new object[] { "2026-02-05T23:12:13.3146420Z", "2026-02-05T23:12:13.3146420Z" });
 
             migrationBuilder.UpdateData(
                 table: "Companies",
                 keyColumn: "Id",
                 keyValue: "company-3-design",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 23, 12, 13, 314, DateTimeKind.Utc).AddTicks(6440), new DateTime(2026, 2, 5, 23, 12, 13, 314, DateTimeKind.Utc).AddTicks(6440) });
+                values: new object[] { "2026-02-05T23:12:13.3146440Z", "2026-02-05T23:12:13.3146440Z" });
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-1-flutter",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 23, 12, 13, 315, DateTimeKind.Utc).AddTicks(8330));
+                value: "2026-02-05T23:12:13.3158330Z");
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-2-ios",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 23, 12, 13, 316, DateTimeKind.Utc).AddTicks(3290));
+                value: "2026-02-05T23:12:13.3163290Z");
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-3-designer",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 23, 12, 13, 316, DateTimeKind.Utc).AddTicks(3300));
+                value: "2026-02-05T23:12:13.3163300Z");
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-4-senior-flutter",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 23, 12, 13, 316, DateTimeKind.Utc).AddTicks(3310));
+                value: "2026-02-05T23:12:13.3163310Z");
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
                 keyValue: "user-1-john",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 23, 12, 13, 316, DateTimeKind.Utc).AddTicks(6910), new DateTime(2026, 2, 5, 23, 12, 13, 316, DateTimeKind.Utc).AddTicks(6910) });
+                values: new object[] { "2026-02-05T23:12:13.3166910Z", "2026-02-05T23:12:13.3166910Z" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Applications_JobId",
@@ -125,56 +125,56 @@ namespace backend.Migrations
                 keyColumn: "Id",
                 keyValue: "company-1-tech",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 22, 45, 6, 737, DateTimeKind.Utc).AddTicks(4500), new DateTime(2026, 2, 5, 22, 45, 6, 737, DateTimeKind.Utc).AddTicks(4500) });
+                values: new object[] { "2026-02-05T22:45:06.7374500Z", "2026-02-05T22:45:06.7374500Z" });
 
             migrationBuilder.UpdateData(
                 table: "Companies",
                 keyColumn: "Id",
                 keyValue: "company-2-mobile",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 22, 45, 6, 737, DateTimeKind.Utc).AddTicks(8520), new DateTime(2026, 2, 5, 22, 45, 6, 737, DateTimeKind.Utc).AddTicks(8520) });
+                values: new object[] { "2026-02-05T22:45:06.7378520Z", "2026-02-05T22:45:06.7378520Z" });
 
             migrationBuilder.UpdateData(
                 table: "Companies",
                 keyColumn: "Id",
                 keyValue: "company-3-design",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 22, 45, 6, 737, DateTimeKind.Utc).AddTicks(8540), new DateTime(2026, 2, 5, 22, 45, 6, 737, DateTimeKind.Utc).AddTicks(8540) });
+                values: new object[] { "2026-02-05T22:45:06.7378540Z", "2026-02-05T22:45:06.7378540Z" });
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-1-flutter",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 22, 45, 6, 738, DateTimeKind.Utc).AddTicks(8520));
+                value: "2026-02-05T22:45:06.7388520Z");
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-2-ios",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 22, 45, 6, 739, DateTimeKind.Utc).AddTicks(2790));
+                value: "2026-02-05T22:45:06.7392790Z");
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-3-designer",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 22, 45, 6, 739, DateTimeKind.Utc).AddTicks(2800));
+                value: "2026-02-05T22:45:06.7392800Z");
 
             migrationBuilder.UpdateData(
                 table: "Jobs",
                 keyColumn: "Id",
                 keyValue: "job-4-senior-flutter",
                 column: "UpdatedDate",
-                value: new DateTime(2026, 2, 5, 22, 45, 6, 739, DateTimeKind.Utc).AddTicks(2810));
+                value: "2026-02-05T22:45:06.7392810Z");
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
                 keyValue: "user-1-john",
                 columns: new[] { "CreatedDate", "UpdatedDate" },
-                values: new object[] { new DateTime(2026, 2, 5, 22, 45, 6, 739, DateTimeKind.Utc).AddTicks(4710), new DateTime(2026, 2, 5, 22, 45, 6, 739, DateTimeKind.Utc).AddTicks(4710) });
+                values: new object[] { "2026-02-05T22:45:06.7394710Z", "2026-02-05T22:45:06.7394710Z" });
         }
     }
 }

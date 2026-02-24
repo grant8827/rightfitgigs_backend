@@ -30,28 +30,12 @@ var allowedOrigins = new[]
 .ToArray();
 
 // Add Entity Framework
-var databaseUrl = builder.Configuration["DATABASE_URL"];
-var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
-var hasPostgresConnection = !string.IsNullOrWhiteSpace(databaseUrl) ||
-                            (!string.IsNullOrWhiteSpace(defaultConnection) &&
-                             (defaultConnection.Contains("Host=", StringComparison.OrdinalIgnoreCase) ||
-                              defaultConnection.Contains("Username=", StringComparison.OrdinalIgnoreCase)));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Host=hopper.proxy.rlwy.net;Port=33137;Database=railway;Username=postgres;Password=bKnpjKnCKoqpuWyTjTziZxfNtceZRXIs";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    if (hasPostgresConnection)
-    {
-        var postgresConnection = !string.IsNullOrWhiteSpace(databaseUrl)
-            ? ConvertDatabaseUrlToNpgsqlConnectionString(databaseUrl)
-            : defaultConnection!;
-
-        options.UseNpgsql(postgresConnection);
-    }
-    else
-    {
-        options.UseSqlite(defaultConnection ?? "Data Source=rightfitgigs.db");
-    }
-
+    options.UseNpgsql(connectionString);
     options.ConfigureWarnings(warnings =>
         warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
@@ -110,27 +94,64 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    if (hasPostgresConnection)
+    var connection = context.Database.GetDbConnection();
+    if (connection.State != System.Data.ConnectionState.Open)
     {
-        var connection = context.Database.GetDbConnection();
-        if (connection.State != System.Data.ConnectionState.Open)
-        {
-            connection.Open();
-        }
+        connection.Open();
+    }
 
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT to_regclass('public.\"Users\"') IS NOT NULL";
-        var usersTableExists = Convert.ToBoolean(command.ExecuteScalar() ?? false);
+    using var command = connection.CreateCommand();
+    command.CommandText = "SELECT to_regclass('public.\"Users\"') IS NOT NULL";
+    var usersTableExists = Convert.ToBoolean(command.ExecuteScalar() ?? false);
 
-        if (!usersTableExists)
-        {
-            var databaseCreator = context.GetService<IRelationalDatabaseCreator>();
-            databaseCreator.CreateTables();
-        }
+    if (!usersTableExists)
+    {
+        var databaseCreator = context.GetService<IRelationalDatabaseCreator>();
+        databaseCreator.CreateTables();
     }
     else
     {
-        context.Database.Migrate();
+        // Fix DateTime columns if they are still TEXT type
+        try
+        {
+            var fixCommand = connection.CreateCommand();
+            fixCommand.CommandText = @"
+                DO $$ 
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Users' AND column_name = 'CreatedDate' AND data_type = 'text') THEN
+                        ALTER TABLE ""Users"" ALTER COLUMN ""CreatedDate"" TYPE timestamp with time zone USING ""CreatedDate""::timestamp with time zone;
+                        ALTER TABLE ""Users"" ALTER COLUMN ""UpdatedDate"" TYPE timestamp with time zone USING ""UpdatedDate""::timestamp with time zone;
+                        ALTER TABLE ""Companies"" ALTER COLUMN ""CreatedDate"" TYPE timestamp with time zone USING ""CreatedDate""::timestamp with time zone;
+                        ALTER TABLE ""Companies"" ALTER COLUMN ""UpdatedDate"" TYPE timestamp with time zone USING ""UpdatedDate""::timestamp with time zone;
+                        ALTER TABLE ""Jobs"" ALTER COLUMN ""PostedDate"" TYPE timestamp with time zone USING ""PostedDate""::timestamp with time zone;
+                        ALTER TABLE ""Jobs"" ALTER COLUMN ""UpdatedDate"" TYPE timestamp with time zone USING ""UpdatedDate""::timestamp with time zone;
+                        ALTER TABLE ""Messages"" ALTER COLUMN ""SentDate"" TYPE timestamp with time zone USING ""SentDate""::timestamp with time zone;
+                        ALTER TABLE ""Messages"" ALTER COLUMN ""ReadDate"" TYPE timestamp with time zone USING ""ReadDate""::timestamp with time zone;
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'Applications') THEN
+                            ALTER TABLE ""Applications"" ALTER COLUMN ""AppliedDate"" TYPE timestamp with time zone USING ""AppliedDate""::timestamp with time zone;
+                            ALTER TABLE ""Applications"" ALTER COLUMN ""UpdatedDate"" TYPE timestamp with time zone USING ""UpdatedDate""::timestamp with time zone;
+                        END IF;
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'Notifications') THEN
+                            ALTER TABLE ""Notifications"" ALTER COLUMN ""CreatedDate"" TYPE timestamp with time zone USING ""CreatedDate""::timestamp with time zone;
+                            ALTER TABLE ""Notifications"" ALTER COLUMN ""ReadDate"" TYPE timestamp with time zone USING ""ReadDate""::timestamp with time zone;
+                        END IF;
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'Advertisements') THEN
+                            ALTER TABLE ""Advertisements"" ALTER COLUMN ""CreatedDate"" TYPE timestamp with time zone USING ""CreatedDate""::timestamp with time zone;
+                            ALTER TABLE ""Advertisements"" ALTER COLUMN ""UpdatedDate"" TYPE timestamp with time zone USING ""UpdatedDate""::timestamp with time zone;
+                            ALTER TABLE ""Advertisements"" ALTER COLUMN ""StartDate"" TYPE timestamp with time zone USING ""StartDate""::timestamp with time zone;
+                            ALTER TABLE ""Advertisements"" ALTER COLUMN ""EndDate"" TYPE timestamp with time zone USING ""EndDate""::timestamp with time zone;
+                        END IF;
+                        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'AppMetrics') THEN
+                            ALTER TABLE ""AppMetrics"" ALTER COLUMN ""CreatedDate"" TYPE timestamp with time zone USING ""CreatedDate""::timestamp with time zone;
+                        END IF;
+                    END IF;
+                END $$;";
+            fixCommand.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not fix DateTime columns: {ex.Message}");
+        }
     }
 
     var testEmployerEmail = "employer.test@example.com";
@@ -182,26 +203,3 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-
-static string ConvertDatabaseUrlToNpgsqlConnectionString(string databaseUrl)
-{
-    var uri = new Uri(databaseUrl);
-    var userInfo = uri.UserInfo.Split(':', 2);
-
-    if (userInfo.Length != 2)
-    {
-        throw new InvalidOperationException("DATABASE_URL is missing username or password.");
-    }
-
-    var builder = new NpgsqlConnectionStringBuilder
-    {
-        Host = uri.Host,
-        Port = uri.Port > 0 ? uri.Port : 5432,
-        Database = uri.AbsolutePath.Trim('/'),
-        Username = Uri.UnescapeDataString(userInfo[0]),
-        Password = Uri.UnescapeDataString(userInfo[1]),
-        SslMode = SslMode.Require
-    };
-
-    return builder.ConnectionString;
-}

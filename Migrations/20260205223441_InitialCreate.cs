@@ -27,7 +27,7 @@ namespace backend.Migrations
                     Email = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
+                    IsActive = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,12 +47,12 @@ namespace backend.Migrations
                     Type = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Industry = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
                     ExperienceLevel = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
-                    IsRemote = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsUrgentlyHiring = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsSeasonal = table.Column<bool>(type: "INTEGER", nullable: false),
-                    PostedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    IsRemote = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsUrgentlyHiring = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsSeasonal = table.Column<int>(type: "INTEGER", nullable: false),
+                    PostedDate = table.Column<string>(type: "TEXT", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<int>(type: "INTEGER", nullable: false),
                     CompanyId = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -91,7 +91,7 @@ namespace backend.Migrations
                     PreferredIndustries = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<int>(type: "INTEGER", nullable: false),
                     CompanyId = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -140,25 +140,24 @@ namespace backend.Migrations
                 columns: new[] { "Id", "CreatedDate", "Description", "Email", "Industry", "IsActive", "Location", "Name", "Size", "UpdatedDate", "Website" },
                 values: new object[,]
                 {
-                    { "company-1-tech", new DateTime(2026, 2, 5, 22, 34, 40, 132, DateTimeKind.Utc).AddTicks(2240), "Leading technology company specializing in mobile and web solutions", "hr@techcorp.com", "Technology", true, "San Francisco", "Tech Corp", "100-500", new DateTime(2026, 2, 5, 22, 34, 40, 132, DateTimeKind.Utc).AddTicks(2240), "https://techcorp.com" },
-                    { "company-2-mobile", new DateTime(2026, 2, 5, 22, 34, 40, 132, DateTimeKind.Utc).AddTicks(6470), "Mobile-first development company", "careers@mobilesolutions.com", "Technology", true, "Remote", "Mobile Solutions", "50-100", new DateTime(2026, 2, 5, 22, 34, 40, 132, DateTimeKind.Utc).AddTicks(6470), "https://mobilesolutions.com" },
-                    { "company-3-design", new DateTime(2026, 2, 5, 22, 34, 40, 132, DateTimeKind.Utc).AddTicks(6480), "Creative design agency for digital products", "jobs@designstudio.com", "Design", true, "New York", "Design Studio", "10-50", new DateTime(2026, 2, 5, 22, 34, 40, 132, DateTimeKind.Utc).AddTicks(6490), "https://designstudio.com" }
+                    { "company-1-tech", "2026-02-05T22:34:40Z", "Leading technology company specializing in mobile and web solutions", "hr@techcorp.com", "Technology", 1, "San Francisco", "Tech Corp", "100-500", "2026-02-05T22:34:40Z", "https://techcorp.com" },
+                    { "company-2-mobile", "2026-02-05T22:34:40Z", "Mobile-first development company", "careers@mobilesolutions.com", "Technology", 1, "Remote", "Mobile Solutions", "50-100", "2026-02-05T22:34:40Z", "https://mobilesolutions.com" },
+                    { "company-3-design", "2026-02-05T22:34:40Z", "Creative design agency for digital products", "jobs@designstudio.com", "Design", 1, "New York", "Design Studio", "10-50", "2026-02-05T22:34:40Z", "https://designstudio.com" }
                 });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "Bio", "CompanyId", "CreatedDate", "DesiredExperienceLevel", "DesiredJobTitle", "DesiredJobType", "DesiredLocation", "DesiredSalaryRange", "Email", "FirstName", "IsActive", "LastName", "Location", "OpenToRemote", "PasswordHash", "Phone", "PreferredIndustries", "ResumeUrl", "Skills", "Title", "UpdatedDate", "UserType" },
-                values: new object[] { "user-1-john", "Experienced Flutter developer with passion for mobile development", null, new DateTime(2026, 2, 5, 22, 34, 40, 134, DateTimeKind.Utc).AddTicks(3730), null, null, null, null, null, "john.smith@example.com", "John", true, "Smith", "San Francisco", true, "", "555-0101", null, null, "Flutter, Dart, iOS, Android, Firebase", "Senior Flutter Developer", new DateTime(2026, 2, 5, 22, 34, 40, 134, DateTimeKind.Utc).AddTicks(3730), "Worker" });
+                values: new object[] { "user-1-john", "Experienced Flutter developer with passion for mobile development", null, "2026-02-05T22:34:40Z", null, null, null, null, null, "john.smith@example.com", "John", 1, "Smith", "San Francisco", 1, "", "555-0101", null, null, "Flutter, Dart, iOS, Android, Firebase", "Senior Flutter Developer", "2026-02-05T22:34:40Z", "Worker" });
 
             migrationBuilder.InsertData(
                 table: "Jobs",
                 columns: new[] { "Id", "Company", "CompanyId", "Description", "ExperienceLevel", "Industry", "IsActive", "IsRemote", "IsSeasonal", "IsUrgentlyHiring", "Location", "PostedDate", "Salary", "Title", "Type", "UpdatedDate" },
                 values: new object[,]
                 {
-                    { "job-1-flutter", "Tech Corp", "company-1-tech", "Looking for an experienced Flutter developer to join our team.", null, null, true, false, false, false, "Remote", new DateTime(2026, 2, 3, 0, 0, 0, 0, DateTimeKind.Utc), "$80k - $120k", "Flutter Developer", "Full-time", new DateTime(2026, 2, 5, 22, 34, 40, 133, DateTimeKind.Utc).AddTicks(7280) },
-                    { "job-2-ios", "Mobile Solutions", "company-2-mobile", "Native iOS development position with competitive benefits.", null, null, true, false, false, false, "San Francisco", new DateTime(2026, 1, 31, 0, 0, 0, 0, DateTimeKind.Utc), "$90k - $130k", "iOS Developer", "Full-time", new DateTime(2026, 2, 5, 22, 34, 40, 134, DateTimeKind.Utc).AddTicks(1920) },
-                    { "job-3-designer", "Design Studio", "company-3-design", "Creative designer needed for mobile and web applications.", null, null, true, false, false, false, "New York", new DateTime(2026, 2, 4, 0, 0, 0, 0, DateTimeKind.Utc), "$70k - $100k", "UI/UX Designer", "Contract", new DateTime(2026, 2, 5, 22, 34, 40, 134, DateTimeKind.Utc).AddTicks(1930) },
-                    { "job-4-senior-flutter", "Tech Corp", "company-1-tech", "We are looking for an experienced Flutter developer with 5+ years of experience.", null, null, true, false, false, false, "Remote", new DateTime(2026, 1, 29, 0, 0, 0, 0, DateTimeKind.Utc), "$100k - $140k", "Senior Flutter Developer", "Full-time", new DateTime(2026, 2, 5, 22, 34, 40, 134, DateTimeKind.Utc).AddTicks(1940) }
+                    { "job-1-flutter", "Tech Corp", "company-1-tech", "Looking for an experienced Flutter developer to join our team.", null, null, 1, 0, 0, 0, "Remote", "2026-02-03T00:00:00Z", "$80k - $120k", "Flutter Developer", "Full-time", "2026-02-05T22:34:40Z" },
+                    { "job-2-ios", "Mobile Solutions", "company-2-mobile", "Native iOS development position with competitive benefits.", null, null, 1, 0, 0, 0, "San Francisco", "2026-01-31T00:00:00Z", "$90k - $130k", "iOS Developer", "Full-time", "2026-02-05T22:34:40Z" },
+                    { "job-3-designer", "Design Studio", "company-3-design", "Creative designer needed for mobile and web applications.", null, null, 1, 0, 0, 0, "New York", "2026-02-04T00:00:00Z", "$70k - $100k", "UI/UX Designer", "Contract", "2026-02-05T22:34:40Z" }
                 });
 
             migrationBuilder.CreateIndex(
