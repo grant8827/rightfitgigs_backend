@@ -1,0 +1,252 @@
+.admin-users-page-shell {
+  min-height: 100vh;
+  background: #f6f8fc;
+  padding: 24px;
+  color: #1e293b;
+}
+
+.admin-users-header h1 {
+  margin: 0;
+  font-size: 1.7rem;
+}
+
+.admin-users-header p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.admin-users-nav-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.admin-users-nav-tabs a {
+  text-decoration: none;
+  color: #1e293b;
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.admin-users-nav-tabs a.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.admin-users-error,
+.admin-users-success {
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.admin-users-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.admin-users-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.admin-users-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-users-toolbar input,
+.admin-users-toolbar select {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.admin-users-toolbar input {
+  flex: 1;
+  min-width: 240px;
+}
+
+.admin-users-table-card {
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.admin-users-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-users-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.admin-users-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-users-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-users-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-users-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-users-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-users-actions button.suspend {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.admin-users-actions button.activate {
+  background: #16a34a;
+  color: #fff;
+}
+
+.admin-users-actions button.message {
+  background: #2563eb;
+  color: #fff;
+}
+
+.admin-users-actions button.remove {
+  background: #dc2626;
+  color: #fff;
+}
+
+.admin-users-pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.admin-users-pagination button {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.admin-users-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-users-loading {
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.admin-users-message-card {
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.admin-users-message-card h3 {
+  margin: 0 0 6px;
+}
+
+.admin-users-message-card p {
+  margin: 0 0 10px;
+  color: #475569;
+}
+
+.admin-users-message-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-users-message-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.admin-users-message-form input,
+.admin-users-message-form textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.95rem;
+}
+
+.admin-users-message-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-users-message-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-users-message-actions button:first-child {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.admin-users-message-actions button:last-child {
+  background: #2563eb;
+  color: #fff;
+}
