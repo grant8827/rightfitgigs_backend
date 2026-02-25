@@ -22,14 +22,23 @@ class MobileAdsBundle extends StatefulWidget {
 
 class _MobileAdsBundleState extends State<MobileAdsBundle> {
   static final Set<String> _dismissedPopupIds = <String>{};
+  static int _currentPopupIndex = 0;
+  static bool _isShowingPopup = false;
+  static DateTime? _lastDismissTime;
+  static DateTime? _allDismissedTime;
+
+  // Timing constants matching React implementation
+  static const Duration _autoAdvanceDuration = Duration(seconds: 30);
+  static const Duration _dismissWaitDuration = Duration(minutes: 1);
+  static const Duration _allDismissedWaitDuration = Duration(minutes: 5);
 
   List<Advertisement> _ads = [];
   int _pinnedIndex = 0;
   bool _isPinnedVisible = true;
-  bool _popupShownInPage = false;
 
   Timer? _pollTimer;
   Timer? _rotateTimer;
+  Timer? _popupTimer;
 
   @override
   void initState() {
@@ -42,6 +51,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
   void dispose() {
     _pollTimer?.cancel();
     _rotateTimer?.cancel();
+    _popupTimer?.cancel();
     super.dispose();
   }
 
@@ -55,7 +65,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
       setState(() {
         _ads = ads;
       });
-      _startPinnedRotation();
+      _startPopupSequenceon();
       _showPopupIfNeeded();
     } catch (_) {}
   }
@@ -74,11 +84,41 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
     return ads[_pinnedIndex % ads.length];
   }
 
-  Advertisement? get _popupAd {
-    final popups = _ads.where((ad) => ad.placement == 'Popup').toList();
-    for (final ad in popups) {
-      if (!_dismissedPopupIds.contains(ad.id)) return ad;
+  List<Advertisement> get _popupAds {
+    return _ads.where((ad) => ad.placement == 'Popup').toList();
+  }
+
+  Advertisement? get _currentPopupAd {
+    final popups = _popupAds;
+    if (popups.isEmpty) return null;
+    
+    // Check if all popups have been dismissed
+    final allDismissed = popups.every((ad) => _dismissedPopupIds.contains(ad.id));
+    
+    if (allDismissed) {
+      // Check if enough time has passed to reset
+      if (_allDismissedTime != null) {
+        final elapsed = DateTime.now().difference(_allDismissedTime!);
+        if (elapsed < _allDismissedWaitDuration) {
+          return null; // Still waiting
+        }
+      }
+      // Reset dismissed IDs and start over
+      _dismissedPopupIds.clear();
+      _currentPopupIndex = 0;
+      _allDismissedTime = null;
     }
+    
+    // Find next non-dismissed popup
+    for (int i = 0; i < popups.length; i++) {
+      final index = (_currentPopupIndex + i) % popups.length;
+      final ad = popups[index];
+      if (!_dismissedPopupIds.contains(ad.id)) {
+        _currentPopupIndex = index;
+        return ad;
+      }
+    }
+    
     return null;
   }
 
@@ -86,41 +126,135 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
     if (!widget.showPinned) {
       return;
     }
+void _startPopupSequence() {
+    if (!widget.showPopup || !mounted) return;
 
-    _rotateTimer?.cancel();
+    _popupTimer?.cancel();
 
-    final currentAd = _currentPinned;
-    final ads = _slotPinnedAds;
-
-    if (currentAd == null || ads.length <= 1) {
-      if (mounted) {
-        setState(() => _isPinnedVisible = true);
+    // Check if we need to wait after a manual dismiss
+    if (_lastDismissTime != null) {
+      final elapsed = DateTime.now().difference(_lastDismissTime!);
+      if (elapsed < _dismissWaitDuration) {
+        final remaining = _dismissWaitDuration - elapsed;
+        _popupTimer = Timer(remaining, () {
+          _lastDismissTime = null;
+          _showNextPopup();
+        });
+        return;
       }
+      _lastDismissTime = null;
+    }
+
+    // Check if we need to wait after all dismissed
+    if (_allDismissedTime != null) {
+      final elapsed = DateTime.now().difference(_allDismissedTime!);
+      if (elapsed < _allDismissedWaitDuration) {
+        final remaining = _allDismissedWaitDuration - elapsed;
+        _popupTimer = Timer(remaining, () {
+          _allDismissedTime = null;
+          _dismissedPopupIds.clear();
+          _currentPopupIndex = 0;
+          _showNextPopup();
+        });
+        return;
+      }
+      _allDismissedTime = null;
+    }
+
+    _showNextPopup();
+  }
+
+  Future<void> _showNextPopup() async {
+    if (!widget.showPopup || _isShowingPopup || !mounted) return;
+
+    final popup = _currentPopupAd;
+    if (popup == null) {
+      // All dismissed, set timer for restart
+      _allDismissedTime = DateTime.now();
+      _popupTimer = Timer(_allDismissedWaitDuration, () {
+        _allDismissedTime = null;
+        _dismissedPopupIds.clear();
+        _currentPopupIndex = 0;
+        _showNextPopup();
+      });
       return;
     }
 
-    final seconds = currentAd.fadeDurationSeconds < 2
-        ? 2
-        : currentAd.fadeDurationSeconds;
-    _rotateTimer = Timer(Duration(seconds: seconds), () {
+    _isShowingPopup = true;
+    await ApiService.trackAdvertisementView(popup.id);
+
+    if (!mounted) {
+      _isShowingPopup = false;
+      return;
+    }
+
+    // Auto-advance timer
+    _popupTimer = Timer(_autoAdvanceDuration, () {
+      if (_isShowingPopup && mounted) {
+        _handlePopupAutoAdvance(popup);
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      setState(() => _isPinnedVisible = false);
-      Timer(const Duration(milliseconds: 300), () {
-        if (!mounted) return;
-        setState(() {
-          _pinnedIndex = (_pinnedIndex + 1) % ads.length;
-          _isPinnedVisible = true;
-        });
-        _startPinnedRotation();
-      });
+      showGeneralDialog(
+        context: context,
+        barrierDismissible: popup.isDismissible,
+        barrierLabel: 'Ad Popup',
+        barrierColor: Colors.black45,
+        transitionDuration: const Duration(milliseconds: 320),
+        pageBuilder: (_, __, ___) => _PopupAdDialog(
+          ad: popup,
+          onClose: () => _handlePopupDismiss(popup, isManual: true),
+          onTap: () => _handleAdClick(popup),
+        ),
+        transitionBuilder: (_, animation, __, child) {
+          final begin = _popupBeginOffset(popup.position);
+          return SlideTransition(
+            position: Tween<Offset>(begin: begin, end: Offset.zero).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            ),
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        },
+      );
     });
   }
 
-  Future<void> _showPopupIfNeeded() async {
-    if (!widget.showPopup || _popupShownInPage || !mounted) return;
+  void _handlePopupAutoAdvance(Advertisement ad) {
+    _popupTimer?.cancel();
+    _dismissedPopupIds.add(ad.id);
+    _currentPopupIndex = (_currentPopupIndex + 1) % _popupAds.length;
+    
+    if (mounted) {
+      Navigator.of(context).pop();
+      _isShowingPopup = false;
+      
+      // Immediately show next popup
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _showNextPopup();
+      });
+    }
+  }
 
-    final popup = _popupAd;
-    if (popup == null) return;
+  void _handlePopupDismiss(Advertisement ad, {required bool isManual}) {
+    _popupTimer?.cancel();
+    _dismissedPopupIds.add(ad.id);
+    _currentPopupIndex = (_currentPopupIndex + 1) % _popupAds.length;
+    
+    if (mounted) {
+      Navigator.of(context).pop();
+      _isShowingPopup = false;
+      
+      if (isManual) {
+        // Wait 1 minute before showing next
+        _lastDismissTime = DateTime.now();
+        _popupTimer = Timer(_dismissWaitDuration, () {
+          _lastDismissTime = null;
+          if (mounted) _showNextPopup();
+        });
+      }
+    }(popup == null) return;
 
     _popupShownInPage = true;
     await ApiService.trackAdvertisementView(popup.id);
@@ -135,8 +269,13 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
         transitionDuration: const Duration(milliseconds: 320),
         pageBuilder: (_, __, ___) => _PopupAdDialog(
           ad: popup,
-          onClose: () {
-            _dismissedPopupIds.add(popup.id);
+  final VoidCallback? onTap;
+
+  const _PopupAdDialog({
+    required this.ad,
+    required this.onClose,
+    this.onTap,
+  
             Navigator.of(context).pop();
           },
         ),
@@ -154,54 +293,57 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
   }
 
   Offset _popupBeginOffset(String position) {
-    switch (position) {
-      case 'TopLeft':
-      case 'BottomLeft':
-        return const Offset(-0.35, 0);
-      case 'TopRight':
-      case 'BottomRight':
-        return const Offset(0.35, 0);
-      case 'Center':
-      default:
-        return const Offset(0, 0.35);
-    }
-  }
-
-  Future<void> _handleAdClick(Advertisement ad) async {
-    await ApiService.trackAdvertisementClick(ad.id);
-    if (ad.targetUrl != null && ad.targetUrl!.isNotEmpty) {
-      final uri = Uri.tryParse(ad.targetUrl!);
-      if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.showPinned) {
-      return const SizedBox.shrink();
-    }
-
-    final ad = _currentPinned;
-    if (ad == null) {
-      return const SizedBox.shrink();
-    }
-
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 300),
-      opacity: _isPinnedVisible ? 1 : 0,
-      child: GestureDetector(
-        onTap: () => _handleAdClick(ad),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+    switch (posGestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 260,
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Material(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (ad.isDismissible)
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: onClose,
+                      ),
+                    ),
+                  if (ad.fileUrl.isNotEmpty)
+                    Image.network(
+                      ApiService.getMediaUrl(ad.fileUrl),
+                      width: double.infinity,
+                      height: 130,
+                      fit: BoxFit.contain,
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      height: 130,
+                      color: Colors.grey.shade100,
+                      alignment: Alignment.center,
+                      child: const Text('No media'),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+                    child: Text(
+                      ad.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ) color: Colors.black.withOpacity(0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

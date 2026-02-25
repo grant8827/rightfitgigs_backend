@@ -71,8 +71,6 @@ const PopupPreview = ({ popupAds = [] }) => {
 
   useEffect(() => {
     if (activePopups.length === 0) {
-      setIsVisible(false);
-      setStatusMessage('No active popup ads to preview');
       return;
     }
 
@@ -91,6 +89,13 @@ const PopupPreview = ({ popupAds = [] }) => {
       }
     };
   }, [currentIndex, activePopups.length]);
+
+  useEffect(() => {
+    if (activePopups.length === 0) {
+      setIsVisible(false);
+      setStatusMessage('No active popup ads to preview');
+    }
+  }, [activePopups.length]);
 
   const handleDismiss = () => {
     if (timerRef.current) {

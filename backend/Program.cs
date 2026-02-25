@@ -98,6 +98,9 @@ app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
+// Health check endpoint for Railway
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
 app.MapControllers();
 
 // Ensure database is created (with error handling to not block startup)
