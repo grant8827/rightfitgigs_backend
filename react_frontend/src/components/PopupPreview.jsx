@@ -53,6 +53,22 @@ const PopupPreview = ({ popupAds = [] }) => {
 
   const activePopups = popupAds.filter(ad => ad.isActive);
 
+  const advanceToNext = () => {
+    setIsVisible(false);
+    setStatusMessage('Transitioning to next popup...');
+
+    setTimeout(() => {
+      const nextIndex = (currentIndex + 1) % activePopups.length;
+      
+      if (nextIndex === 0) {
+        // Completed full cycle, restart
+        setStatusMessage('Completed cycle. Restarting...');
+      }
+      
+      setCurrentIndex(nextIndex);
+    }, 300); // Brief transition delay
+  };
+
   useEffect(() => {
     if (activePopups.length === 0) {
       setIsVisible(false);
@@ -75,22 +91,6 @@ const PopupPreview = ({ popupAds = [] }) => {
       }
     };
   }, [currentIndex, activePopups.length]);
-
-  const advanceToNext = () => {
-    setIsVisible(false);
-    setStatusMessage('Transitioning to next popup...');
-
-    setTimeout(() => {
-      const nextIndex = (currentIndex + 1) % activePopups.length;
-      
-      if (nextIndex === 0) {
-        // Completed full cycle, restart
-        setStatusMessage('Completed cycle. Restarting...');
-      }
-      
-      setCurrentIndex(nextIndex);
-    }, 300); // Brief transition delay
-  };
 
   const handleDismiss = () => {
     if (timerRef.current) {
