@@ -112,6 +112,48 @@
   font-weight: 600;
 }
 
+.admin-ads-form-actions button.cancel-btn {
+  background: #94a3b8;
+  margin-left: 10px;
+}
+
+.admin-ads-form-actions button.cancel-btn:hover {
+  background: #64748b;
+}
+
+.editing-notice {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.editing-notice span {
+  flex: 1;
+  font-weight: 600;
+}
+
+.cancel-edit-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cancel-edit-btn:hover {
+  background: #dc2626;
+}
+
 .admin-ads-sections {
   margin-top: 14px;
   display: grid;
@@ -154,14 +196,31 @@
   font-weight: 600;
 }
 
+.admin-ad-item-actions button.edit {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.admin-ad-item-actions button.edit:hover {
+  background: #2563eb;
+}
+
 .admin-ad-item-actions button.danger {
   background: #dc2626;
   color: #fff;
 }
 
-.admin-ad-item-actions button:not(.danger) {
+.admin-ad-item-actions button.danger:hover {
+  background: #b91c1c;
+}
+
+.admin-ad-item-actions button:not(.danger):not(.edit) {
   background: #e2e8f0;
   color: #0f172a;
+}
+
+.admin-ad-item-actions button:not(.danger):not(.edit):hover {
+  background: #cbd5e1;
 }
 
 .admin-ads-loading {

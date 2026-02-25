@@ -5,6 +5,7 @@ import {
   deleteAdvertisement,
   getAdvertisements,
   toggleAdvertisementActive,
+  updateAdvertisement,
 } from '../services/apiService';
 import PopupPreview from '../components/PopupPreview';
 import './AdminAdvertisementsPage.css';
@@ -35,6 +36,7 @@ const AdminAdvertisementsPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editingAdId, setEditingAdId] = useState(null);
 
   const fetchAds = async ({ showLoader = false } = {}) => {
     if (showLoader) {
@@ -65,6 +67,7 @@ const AdminAdvertisementsPage = () => {
 
   const resetForm = () => {
     setForm(initialForm);
+    setEditingAdId(null);
   };
 
   const handleChange = (event) => {
@@ -122,15 +125,51 @@ const AdminAdvertisementsPage = () => {
 
     try {
       const payload = buildFormData();
-      await createAdvertisement(payload);
-      setSuccess('Advertisement created successfully.');
+      
+      if (editingAdId) {
+        // Update existing advertisement
+        await updateAdvertisement(editingAdId, payload);
+        setSuccess('Advertisement updated successfully.');
+      } else {
+        // Create new advertisement
+        await createAdvertisement(payload);
+        setSuccess('Advertisement created successfully.');
+      }
+      
       resetForm();
       fetchAds();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to create advertisement.');
+      setError(err?.response?.data?.message || `Failed to ${editingAdId ? 'update' : 'create'} advertisement.`);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleEditAd = (ad) => {
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Populate form with ad data
+    setForm({
+      title: ad.title || '',
+      description: ad.description || '',
+      platform: ad.platform || 'Both',
+      placement: ad.placement || 'Popup',
+      position: ad.position || 'BottomRight',
+      fadeDurationSeconds: ad.fadeDurationSeconds || 8,
+      isDismissible: ad.isDismissible ?? true,
+      targetUrl: ad.targetUrl || '',
+      businessName: ad.businessName || '',
+      displayOrder: ad.displayOrder || 0,
+      isActive: ad.isActive ?? true,
+      startDate: ad.startDate ? new Date(ad.startDate).toISOString().slice(0, 16) : '',
+      endDate: ad.endDate ? new Date(ad.endDate).toISOString().slice(0, 16) : '',
+      file: null,
+    });
+    
+    setEditingAdId(ad.id);
+    setError('');
+    setSuccess('');
   };
 
   const handleToggleAd = async (id) => {
@@ -171,7 +210,15 @@ const AdminAdvertisementsPage = () => {
       {success && <div className="admin-ads-success">{success}</div>}
 
       <section className="admin-ads-create-card">
-        <h2>Create Advertisement</h2>
+        <h2>{editingAdId ? 'Edit Advertisement' : 'Create Advertisement'}</h2>
+        {editingAdId && (
+          <div className="editing-notice">
+            <span>Editing advertisement. </span>
+            <button type="button" onClick={resetForm} className="cancel-edit-btn">
+              Cancel
+            </button>
+          </div>
+        )}
         <form onSubmit={handleCreateAd} className="admin-ads-form-grid">
           <label>
             Title (optional)
@@ -284,8 +331,13 @@ const AdminAdvertisementsPage = () => {
 
           <div className="admin-ads-form-actions full-width">
             <button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Create Advertisement'}
+              {isSaving ? 'Saving...' : editingAdId ? 'Update Advertisement' : 'Create Advertisement'}
             </button>
+            {editingAdId && (
+              <button type="button" onClick={resetForm} className="cancel-btn">
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       </section>
@@ -316,6 +368,9 @@ const AdminAdvertisementsPage = () => {
                     <p>{ad.businessName || 'No business name'} • {ad.platform} • Order {ad.displayOrder}</p>
                   </div>
                   <div className="admin-ad-item-actions">
+                    <button onClick={() => handleEditAd(ad)} className="edit">
+                      Edit
+                    </button>
                     <button onClick={() => handleToggleAd(ad.id)}>
                       {ad.isActive ? 'Deactivate' : 'Activate'}
                     </button>
@@ -337,6 +392,9 @@ const AdminAdvertisementsPage = () => {
                     </p>
                   </div>
                   <div className="admin-ad-item-actions">
+                    <button onClick={() => handleEditAd(ad)} className="edit">
+                      Edit
+                    </button>
                     <button onClick={() => handleToggleAd(ad.id)}>
                       {ad.isActive ? 'Deactivate' : 'Activate'}
                     </button>
