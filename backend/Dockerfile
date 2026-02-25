@@ -13,5 +13,4 @@ COPY --from=build /app/out ./
 
 EXPOSE 8080
 
-# Use shell form so Railway's $PORT variable expands at container runtime
 CMD ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} dotnet backend.dll"]
