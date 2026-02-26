@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { getMediaUrl } from '../services/apiService';
 import './PopupPreview.css';
 
@@ -45,77 +45,93 @@ const getPopupSlideClass = (position = 'BottomRight') => {
   }
 };
 
+const initialState = {
+  currentIndex: 0,
+  isVisible: false,
+  statusMessage: '',
+};
+
+function adReducer(state, action) {
+  switch (action.type) {
+    case 'SHOW':
+      return { ...state, isVisible: true, statusMessage: action.message };
+    case 'HIDE':
+      return { ...state, isVisible: false, statusMessage: action.message };
+    case 'ADVANCE':
+      return { ...state, isVisible: false, statusMessage: 'Transitioning to next popup...' };
+    case 'SET_INDEX':
+      return {
+        ...state,
+        currentIndex: action.index,
+        ...(action.message ? { statusMessage: action.message } : {}),
+      };
+    default:
+      return state;
+  }
+}
+
 const PopupPreview = ({ popupAds = [] }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
+  const [state, dispatch] = useReducer(adReducer, initialState);
+  const { currentIndex, isVisible, statusMessage } = state;
   const timerRef = useRef(null);
 
   const activePopups = popupAds.filter(ad => ad.isActive);
 
-  const advanceToNext = () => {
-    setIsVisible(false);
-    setStatusMessage('Transitioning to next popup...');
-
+  const advanceToNext = useCallback((fromIndex) => {
+    dispatch({ type: 'ADVANCE' });
     setTimeout(() => {
-      const nextIndex = (currentIndex + 1) % activePopups.length;
-      
-      if (nextIndex === 0) {
-        // Completed full cycle, restart
-        setStatusMessage('Completed cycle. Restarting...');
-      }
-      
-      setCurrentIndex(nextIndex);
-    }, 300); // Brief transition delay
-  };
+      const nextIndex = (fromIndex + 1) % activePopups.length;
+      const cycleComplete = nextIndex === 0;
+      dispatch({
+        type: 'SET_INDEX',
+        index: nextIndex,
+        message: cycleComplete ? 'Completed cycle. Restarting...' : '',
+      });
+    }, 300);
+  }, [activePopups.length]);
 
+  // Handle empty state
   useEffect(() => {
     if (activePopups.length === 0) {
-      return;
-    }
-
-    // Show first popup
-    setIsVisible(true);
-    setStatusMessage(`Showing popup ${currentIndex + 1} of ${activePopups.length}`);
-
-    // Auto-advance after 30 seconds
-    timerRef.current = setTimeout(() => {
-      advanceToNext();
-    }, AUTO_ADVANCE_MS);
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [currentIndex, activePopups.length]);
-
-  useEffect(() => {
-    if (activePopups.length === 0) {
-      setIsVisible(false);
-      setStatusMessage('No active popup ads to preview');
+      dispatch({ type: 'HIDE', message: 'No active popup ads to preview' });
     }
   }, [activePopups.length]);
 
-  const handleDismiss = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
+  // Show popup and start auto-advance timer when index changes
+  useEffect(() => {
+    if (activePopups.length === 0) return;
 
-    setIsVisible(false);
+    dispatch({
+      type: 'SHOW',
+      message: `Showing popup ${currentIndex + 1} of ${activePopups.length}`,
+    });
+
+    timerRef.current = setTimeout(() => {
+      advanceToNext(currentIndex);
+    }, AUTO_ADVANCE_MS);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [currentIndex, activePopups.length, advanceToNext]);
+
+  const handleDismiss = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
     const nextIndex = (currentIndex + 1) % activePopups.length;
 
     if (nextIndex === 0) {
-      // All popups dismissed, wait 5 minutes
-      setStatusMessage('All popups dismissed. Waiting 5 minutes before restart...');
+      dispatch({ type: 'HIDE', message: 'All popups dismissed. Waiting 5 minutes before restart...' });
       timerRef.current = setTimeout(() => {
-        setCurrentIndex(0);
+        dispatch({ type: 'SET_INDEX', index: 0 });
       }, ALL_DISMISSED_WAIT_MS);
     } else {
-      // Show next popup after 1 minute
-      setStatusMessage(`Popup dismissed. Next popup in 1 minute... (${nextIndex + 1} of ${activePopups.length})`);
+      dispatch({
+        type: 'HIDE',
+        message: `Popup dismissed. Next popup in 1 minute... (${nextIndex + 1} of ${activePopups.length})`,
+      });
       timerRef.current = setTimeout(() => {
-        setCurrentIndex(nextIndex);
+        dispatch({ type: 'SET_INDEX', index: nextIndex });
       }, DISMISS_WAIT_MS);
     }
   };
