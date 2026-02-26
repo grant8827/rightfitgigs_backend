@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# .NET backend build artifacts
+backend/obj/
+backend/bin/
+backend/out/
+backend/uploads/
