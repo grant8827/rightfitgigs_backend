@@ -1,5 +1,4 @@
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'models/job.dart';
@@ -16,23 +15,12 @@ class ApiService {
   static const String _productionOrigin =
       'https://rightfitgigsbackend-production.up.railway.app'; // Updated production backend
 
-  static String get _localOrigin {
-    if (kIsWeb) {
-      return 'http://localhost:5071'; // Local backend for web
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5071'; // Local backend for Android emulator
-    }
-    return 'http://localhost:5071'; // Local backend for other
-  }
-
   static String get _apiOrigin {
     if (_configuredApiBaseUrl.trim().isNotEmpty) {
       return _configuredApiBaseUrl.trim().replaceAll(RegExp(r'/$'), '');
     }
-    if (kDebugMode) {
-      return _localOrigin;
-    }
+    // Always use production backend.
+    // Override with --dart-define=API_BASE_URL=http://... for local dev.
     return _productionOrigin;
   }
 

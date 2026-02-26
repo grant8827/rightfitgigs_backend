@@ -13,6 +13,7 @@
   overflow: hidden;
   box-shadow: 0 20px 50px rgba(2, 6, 23, 0.3);
   position: fixed;
+  line-height: 0;
 }
 
 .ad-close-btn {
@@ -68,6 +69,7 @@
 
 .ad-meta {
   padding: 12px;
+  line-height: 1.4;
 }
 
 .ad-meta h4 {

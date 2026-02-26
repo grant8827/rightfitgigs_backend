@@ -35,6 +35,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
   List<Advertisement> _ads = [];
   int _pinnedIndex = 0;
   bool _isPinnedVisible = true;
+  bool _initialLoadDone = false;
 
   Timer? _pollTimer;
   Timer? _rotateTimer;
@@ -59,15 +60,19 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
     try {
       final ads = await ApiService.getAdvertisements(
         activeOnly: true,
-        platform: 'Mobile',
       );
       if (!mounted) return;
       setState(() {
         _ads = ads;
       });
-      _startPopupSequenceon();
-      _showPopupIfNeeded();
-    } catch (_) {}
+      _startPinnedRotation();
+      if (!_initialLoadDone) {
+        _initialLoadDone = true;
+        _startPopupSequence();
+      }
+    } catch (e) {
+      debugPrint('[MobileAdsBundle] Failed to load ads: $e');
+    }
   }
 
   List<Advertisement> get _slotPinnedAds {
@@ -91,10 +96,12 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
   Advertisement? get _currentPopupAd {
     final popups = _popupAds;
     if (popups.isEmpty) return null;
-    
+
     // Check if all popups have been dismissed
-    final allDismissed = popups.every((ad) => _dismissedPopupIds.contains(ad.id));
-    
+    final allDismissed = popups.every(
+      (ad) => _dismissedPopupIds.contains(ad.id),
+    );
+
     if (allDismissed) {
       // Check if enough time has passed to reset
       if (_allDismissedTime != null) {
@@ -108,7 +115,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
       _currentPopupIndex = 0;
       _allDismissedTime = null;
     }
-    
+
     // Find next non-dismissed popup
     for (int i = 0; i < popups.length; i++) {
       final index = (_currentPopupIndex + i) % popups.length;
@@ -118,20 +125,54 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
         return ad;
       }
     }
-    
+
     return null;
   }
 
+  final Set<String> _viewedAdIds = <String>{};
+
+  Future<void> _trackViewOnce(String adId) async {
+    if (_viewedAdIds.contains(adId)) return;
+    _viewedAdIds.add(adId);
+    try {
+      await ApiService.trackAdvertisementView(adId);
+    } catch (_) {}
+  }
+
   void _startPinnedRotation() {
-    if (!widget.showPinned) {
+    if (!widget.showPinned) return;
+    _rotateTimer?.cancel();
+    final currentAd = _currentPinned;
+    final ads = _slotPinnedAds;
+    if (currentAd == null || ads.length <= 1) {
+      if (mounted) setState(() => _isPinnedVisible = true);
+      if (currentAd != null) _trackViewOnce(currentAd.id);
       return;
     }
-void _startPopupSequence() {
+    final seconds = currentAd.fadeDurationSeconds < 2
+        ? 2
+        : currentAd.fadeDurationSeconds;
+    _rotateTimer = Timer(Duration(seconds: seconds), () {
+      if (!mounted) return;
+      setState(() => _isPinnedVisible = false);
+      Timer(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        setState(() {
+          _pinnedIndex = (_pinnedIndex + 1) % ads.length;
+          _isPinnedVisible = true;
+        });
+        final next = _currentPinned;
+        if (next != null) _trackViewOnce(next.id);
+        _startPinnedRotation();
+      });
+    });
+  }
+
+  void _startPopupSequence() {
     if (!widget.showPopup || !mounted) return;
 
     _popupTimer?.cancel();
 
-    // Check if we need to wait after a manual dismiss
     if (_lastDismissTime != null) {
       final elapsed = DateTime.now().difference(_lastDismissTime!);
       if (elapsed < _dismissWaitDuration) {
@@ -145,7 +186,6 @@ void _startPopupSequence() {
       _lastDismissTime = null;
     }
 
-    // Check if we need to wait after all dismissed
     if (_allDismissedTime != null) {
       final elapsed = DateTime.now().difference(_allDismissedTime!);
       if (elapsed < _allDismissedWaitDuration) {
@@ -181,7 +221,7 @@ void _startPopupSequence() {
     }
 
     _isShowingPopup = true;
-    await ApiService.trackAdvertisementView(popup.id);
+    await _trackViewOnce(popup.id);
 
     if (!mounted) {
       _isShowingPopup = false;
@@ -225,11 +265,11 @@ void _startPopupSequence() {
     _popupTimer?.cancel();
     _dismissedPopupIds.add(ad.id);
     _currentPopupIndex = (_currentPopupIndex + 1) % _popupAds.length;
-    
+
     if (mounted) {
       Navigator.of(context).pop();
       _isShowingPopup = false;
-      
+
       // Immediately show next popup
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _showNextPopup();
@@ -241,11 +281,11 @@ void _startPopupSequence() {
     _popupTimer?.cancel();
     _dismissedPopupIds.add(ad.id);
     _currentPopupIndex = (_currentPopupIndex + 1) % _popupAds.length;
-    
+
     if (mounted) {
       Navigator.of(context).pop();
       _isShowingPopup = false;
-      
+
       if (isManual) {
         // Wait 1 minute before showing next
         _lastDismissTime = DateTime.now();
@@ -254,46 +294,148 @@ void _startPopupSequence() {
           if (mounted) _showNextPopup();
         });
       }
-    }(popup == null) return;
+    }
+  }
 
-    _popupShownInPage = true;
-    await ApiService.trackAdvertisementView(popup.id);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showGeneralDialog(
-        context: context,
-        barrierDismissible: popup.isDismissible,
-        barrierLabel: 'Ad Popup',
-        barrierColor: Colors.black45,
-        transitionDuration: const Duration(milliseconds: 320),
-        pageBuilder: (_, __, ___) => _PopupAdDialog(
-          ad: popup,
-  final VoidCallback? onTap;
-
-  const _PopupAdDialog({
-    required this.ad,
-    required this.onClose,
-    this.onTap,
-  
-            Navigator.of(context).pop();
-          },
-        ),
-        transitionBuilder: (_, animation, __, child) {
-          final begin = _popupBeginOffset(popup.position);
-          return SlideTransition(
-            position: Tween<Offset>(begin: begin, end: Offset.zero).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            ),
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
-      );
-    });
+  Future<void> _handleAdClick(Advertisement ad) async {
+    await ApiService.trackAdvertisementClick(ad.id);
+    if (ad.targetUrl != null && ad.targetUrl!.isNotEmpty) {
+      final uri = Uri.tryParse(ad.targetUrl!);
+      if (uri != null)
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Offset _popupBeginOffset(String position) {
-    switch (posGestureDetector(
+    switch (position) {
+      case 'TopLeft':
+      case 'BottomLeft':
+        return const Offset(-0.35, 0);
+      case 'TopRight':
+      case 'BottomRight':
+        return const Offset(0.35, 0);
+      default:
+        return const Offset(0, 0.35);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.showPinned) return const SizedBox.shrink();
+    final ad = _currentPinned;
+    if (ad == null) return const SizedBox.shrink();
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 300),
+      opacity: _isPinnedVisible ? 1 : 0,
+      child: GestureDetector(
+        onTap: () => _handleAdClick(ad),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (ad.fileUrl.isNotEmpty)
+                  Image.network(
+                    ApiService.getMediaUrl(ad.fileUrl),
+                    width: double.infinity,
+                    height: 110,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                  )
+                else
+                  _buildPlaceholder(),
+                if (ad.description.isNotEmpty || (ad.businessName?.isNotEmpty ?? false))
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ad.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            ad.description.isNotEmpty ? ad.description : (ad.businessName ?? 'Sponsored'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: 110,
+      color: Colors.grey.shade100,
+      alignment: Alignment.center,
+      child: Text(
+        'No media',
+        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+      ),
+    );
+  }
+}
+
+class _PopupAdDialog extends StatelessWidget {
+  final Advertisement ad;
+  final VoidCallback onClose;
+  final VoidCallback? onTap;
+
+  const _PopupAdDialog({required this.ad, required this.onClose, this.onTap});
+
+  Alignment _alignmentForPosition() {
+    switch (ad.position) {
+      case 'TopLeft':
+        return Alignment.topLeft;
+      case 'TopRight':
+        return Alignment.topRight;
+      case 'BottomLeft':
+        return Alignment.bottomLeft;
+      case 'BottomRight':
+        return Alignment.bottomRight;
+      case 'Center':
+      default:
+        return Alignment.center;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Align(
+        alignment: _alignmentForPosition(),
+        child: GestureDetector(
           onTap: onTap,
           child: Container(
             width: 260,
@@ -330,149 +472,35 @@ void _startPopupSequence() {
                       alignment: Alignment.center,
                       child: const Text('No media'),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-                    child: Text(
-                      ad.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                  if (ad.description.isNotEmpty || (ad.businessName?.isNotEmpty ?? false))
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ad.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              ad.description.isNotEmpty ? ad.description : (ad.businessName ?? 'Sponsored'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
                 ],
-              ) color: Colors.black.withOpacity(0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (ad.fileUrl.isNotEmpty)
-                  Image.network(
-                    ApiService.getMediaUrl(ad.fileUrl),
-                    width: double.infinity,
-                    height: 110,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                  )
-                else
-                  _buildPlaceholder(),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Text(
-                    ad.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: 110,
-      color: Colors.grey.shade100,
-      alignment: Alignment.center,
-      child: Text(
-        'No media',
-        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-      ),
-    );
-  }
-}
-
-class _PopupAdDialog extends StatelessWidget {
-  final Advertisement ad;
-  final VoidCallback onClose;
-
-  const _PopupAdDialog({required this.ad, required this.onClose});
-
-  Alignment _alignmentForPosition() {
-    switch (ad.position) {
-      case 'TopLeft':
-        return Alignment.topLeft;
-      case 'TopRight':
-        return Alignment.topRight;
-      case 'BottomLeft':
-        return Alignment.bottomLeft;
-      case 'BottomRight':
-        return Alignment.bottomRight;
-      case 'Center':
-      default:
-        return Alignment.center;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Align(
-        alignment: _alignmentForPosition(),
-        child: Container(
-          width: 260,
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Material(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (ad.isDismissible)
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: onClose,
-                    ),
-                  ),
-                if (ad.fileUrl.isNotEmpty)
-                  Image.network(
-                    ApiService.getMediaUrl(ad.fileUrl),
-                    width: double.infinity,
-                    height: 130,
-                    fit: BoxFit.contain,
-                  )
-                else
-                  Container(
-                    width: double.infinity,
-                    height: 130,
-                    color: Colors.grey.shade100,
-                    alignment: Alignment.center,
-                    child: const Text('No media'),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-                  child: Text(
-                    ad.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ),
