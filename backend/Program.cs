@@ -94,6 +94,15 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
+// Also serve resumes subfolder
+var resumesPath = Path.Combine(app.Environment.ContentRootPath, "uploads", "resumes");
+Directory.CreateDirectory(resumesPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(resumesPath),
+    RequestPath = "/uploads/resumes"
+});
+
 app.UseCors("AllowAll");
 
 app.UseAuthorization();

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
@@ -12,10 +14,12 @@ namespace RightFitGigs.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _environment;
 
-        public AuthController(ApplicationDbContext context)
+        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         [HttpPost("register")]
@@ -321,6 +325,101 @@ namespace RightFitGigs.Controllers
 
                 user.ResumeUrl = request.ResumeUrl;
                 user.UpdatedDate = DateTime.UtcNow;
+
+                // Also update all existing applications for this worker so employers see the latest resume
+                var workerApplications = await _context.Applications
+                    .Where(a => a.WorkerId == id)
+                    .ToListAsync();
+                foreach (var application in workerApplications)
+                {
+                    application.ResumeUrl = request.ResumeUrl;
+                }
+
+                await _context.SaveChangesAsync();
+
+                var response = new UserResponse
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    Phone = user.Phone,
+                    Location = user.Location,
+                    Bio = user.Bio,
+                    Skills = user.Skills,
+                    Title = user.Title,
+                    UserType = user.UserType,
+                    Initials = user.Initials,
+                    CreatedDate = user.CreatedDate,
+                    UpdatedDate = user.UpdatedDate,
+                    IsActive = user.IsActive,
+                    ResumeUrl = user.ResumeUrl,
+                    DesiredJobTitle = user.DesiredJobTitle,
+                    DesiredLocation = user.DesiredLocation,
+                    DesiredSalaryRange = user.DesiredSalaryRange,
+                    DesiredJobType = user.DesiredJobType,
+                    DesiredExperienceLevel = user.DesiredExperienceLevel,
+                    OpenToRemote = user.OpenToRemote,
+                    PreferredIndustries = user.PreferredIndustries
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("profile/{id}/resume/upload")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<ActionResult<UserResponse>> UploadResumeFile(string id, [FromForm] IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest("No file provided");
+
+                var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                    return BadRequest("Only PDF, DOC, and DOCX files are allowed");
+
+                if (file.Length > 5 * 1024 * 1024)
+                    return BadRequest("File size must be under 5MB");
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
+                if (user == null)
+                    return NotFound("User not found");
+
+                // Save file to uploads/resumes/{userId}/
+                var resumesPath = Path.Combine(_environment.ContentRootPath, "uploads", "resumes", id);
+                Directory.CreateDirectory(resumesPath);
+
+                // Delete any old resume files for this user
+                foreach (var oldFile in Directory.GetFiles(resumesPath))
+                    System.IO.File.Delete(oldFile);
+
+                var fileName = $"{Guid.NewGuid()}{fileExtension}";
+                var filePath = Path.Combine(resumesPath, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var resumeUrl = $"/uploads/resumes/{id}/{fileName}";
+                user.ResumeUrl = resumeUrl;
+                user.UpdatedDate = DateTime.UtcNow;
+
+                // Update all existing applications so employers immediately see the new resume
+                var workerApplications = await _context.Applications
+                    .Where(a => a.WorkerId == id)
+                    .ToListAsync();
+                foreach (var application in workerApplications)
+                {
+                    application.ResumeUrl = resumeUrl;
+                }
+
                 await _context.SaveChangesAsync();
 
                 var response = new UserResponse
