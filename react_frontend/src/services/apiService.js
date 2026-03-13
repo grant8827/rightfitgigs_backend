@@ -11,6 +11,13 @@ const normalizedOrigin = (configuredApiUrl && configuredApiUrl.length > 0)
 const API_ORIGIN = normalizedOrigin;
 const BASE_URL = `${API_ORIGIN}/api`;
 
+// Helper to build a full URL for files stored on the backend (e.g. /uploads/resumes/...)
+export const getFileUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http')) return path; // already absolute
+  return `${API_ORIGIN}${path}`;
+};
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -165,6 +172,15 @@ export const updateProfile = async (id, profileData) => {
 
 export const uploadResume = async (id, resumeUrl) => {
   const response = await apiClient.post(`/auth/profile/${id}/resume`, { resumeUrl });
+  return response.data;
+};
+
+export const uploadResumeFile = async (id, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post(`/auth/profile/${id}/resume/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
   return response.data;
 };
 

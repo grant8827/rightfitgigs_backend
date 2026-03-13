@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import WorkerProfile from '../components/WorkerProfile';
 import JobDetailsModal from '../components/JobDetailsModal';
+import ApplyModal from '../components/ApplyModal';
 import MessagesPage from './MessagesPage';
 import { getJobs, submitApplication, getWorkerApplications } from '../services/apiService';
 import './WorkerDashboard.css';
@@ -17,6 +18,8 @@ const WorkerDashboard = () => {
   const [loadingApplications, setLoadingApplications] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [applyJob, setApplyJob] = useState(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -55,33 +58,18 @@ const WorkerDashboard = () => {
   };
 
   const handleApply = async (jobId, coverLetter) => {
-    try {
-      console.log('Submitting application:', { jobId, workerId: user.id, coverLetter });
-      await submitApplication({
-        jobId,
-        workerId: user.id,
-        coverLetter
-      });
-      setSuccess('Application submitted successfully!');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      console.error('Application error:', err);
-      if (err.response?.status === 409) {
-        setError('You have already applied for this job');
-      } else {
-        setError('Failed to submit application. Please try again.');
-      }
-      setTimeout(() => setError(''), 3000);
-      throw err;
-    }
+    await submitApplication({
+      jobId,
+      workerId: user.id,
+      coverLetter
+    });
+    setSuccess('Application submitted successfully!');
+    setTimeout(() => setSuccess(''), 3000);
   };
 
-  const handleQuickApply = async (job) => {
-    try {
-      await handleApply(job.id, '');
-    } catch {
-      // Error already handled in handleApply
-    }
+  const handleOpenApplyModal = (job) => {
+    setApplyJob(job);
+    setShowApplyModal(true);
   };
 
   const fetchApplications = async () => {
@@ -296,7 +284,7 @@ const WorkerDashboard = () => {
                       </button>
                       <button 
                         className="btn-primary" 
-                        onClick={() => handleQuickApply(job)}
+                        onClick={() => handleOpenApplyModal(job)}
                       >
                         Apply Now
                       </button>
@@ -377,6 +365,14 @@ const WorkerDashboard = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      {showApplyModal && applyJob && (
+        <ApplyModal
+          job={applyJob}
+          onClose={() => { setShowApplyModal(false); setApplyJob(null); }}
+          onSubmit={handleApply}
+        />
+      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { getJobs, createJob, updateJob, getAllApplications, updateApplicationStatus, deleteJob, toggleJobStatus } from '../services/apiService';
+import { getJobs, createJob, updateJob, getAllApplications, updateApplicationStatus, deleteJob, toggleJobStatus, getFileUrl } from '../services/apiService';
 import MessagesPage from './MessagesPage';
 import './EmployerDashboard.css';
 
@@ -34,10 +34,24 @@ const EmployerDashboard = () => {
     salaryFrequency: 'Monthly',
     industry: 'Technology',
     experienceLevel: 'Mid-level',
+    educationLevel: 'Bachelor',
     isRemote: false,
     isUrgentlyHiring: false,
     isSeasonal: false
   });
+
+  const [companyProfile, setCompanyProfile] = useState({
+    companyName: '',
+    industry: '',
+    companySize: '',
+    website: '',
+    location: '',
+    description: '',
+    contactEmail: '',
+    contactPhone: '',
+    founded: ''
+  });
+  const [companyProfileSaved, setCompanyProfileSaved] = useState(false);
 
   useEffect(() => {
     if (selectedTab === 'jobs') {
@@ -102,6 +116,7 @@ const EmployerDashboard = () => {
         salaryFrequency: 'Monthly',
         industry: 'Technology',
         experienceLevel: 'Mid-level',
+        educationLevel: 'Bachelor',
         isRemote: false,
         isUrgentlyHiring: false,
         isSeasonal: false
@@ -128,6 +143,7 @@ const EmployerDashboard = () => {
       salaryFrequency: 'Monthly',
       industry: 'Technology',
       experienceLevel: 'Mid-level',
+      educationLevel: 'Bachelor',
       isRemote: false,
       isUrgentlyHiring: false,
       isSeasonal: false
@@ -233,7 +249,8 @@ const EmployerDashboard = () => {
       experienceLevel: job.experienceLevel || 'Mid-level',
       isRemote: job.isRemote || false,
       isUrgentlyHiring: job.isUrgentlyHiring || false,
-      isSeasonal: job.isSeasonal || false
+      isSeasonal: job.isSeasonal || false,
+      educationLevel: job.educationLevel || 'Bachelor'
     });
     setShowAddJobForm(true);
     setSelectedTab('jobs');
@@ -475,17 +492,32 @@ const EmployerDashboard = () => {
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label>Experience Level *</label>
-                      <select
-                        value={newJob.experienceLevel}
-                        onChange={(e) => setNewJob({...newJob, experienceLevel: e.target.value})}
-                      >
-                        <option>Entry-level</option>
-                        <option>Mid-level</option>
-                        <option>Senior-level</option>
-                        <option>Executive</option>
-                      </select>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Experience Level *</label>
+                        <select
+                          value={newJob.experienceLevel}
+                          onChange={(e) => setNewJob({...newJob, experienceLevel: e.target.value})}
+                        >
+                          <option>Entry-level</option>
+                          <option>Mid-level</option>
+                          <option>Senior-level</option>
+                          <option>Executive</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Education Level *</label>
+                        <select
+                          value={newJob.educationLevel}
+                          onChange={(e) => setNewJob({...newJob, educationLevel: e.target.value})}
+                        >
+                          <option value="Certificate">Certificate</option>
+                          <option value="Associate">Associate</option>
+                          <option value="Bachelor">Bachelor</option>
+                          <option value="Masters">Masters</option>
+                          <option value="PhD">PhD</option>
+                        </select>
+                      </div>
                     </div>
 
                     {/* Job Options Section */}
@@ -640,14 +672,25 @@ const EmployerDashboard = () => {
                           <p>{app.coverLetter}</p>
                         </div>
                       )}
-                      {app.resumeUrl && (
-                        <div className="detail-row">
-                          <span className="label">Resume:</span>
-                          <a href={app.resumeUrl} target="_blank" rel="noopener noreferrer">
-                            View Resume
+                      <div className="detail-row" style={{alignItems:'center'}}>
+                        <span className="label">Resume:</span>
+                        {app.resumeUrl ? (
+                          <a
+                            href={getFileUrl(app.resumeUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display:'inline-flex',alignItems:'center',gap:'0.3rem',
+                              padding:'0.3rem 0.75rem',background:'#16a34a',color:'white',
+                              borderRadius:'5px',textDecoration:'none',fontSize:'0.82rem',fontWeight:600
+                            }}
+                          >
+                            📥 View Resume
                           </a>
-                        </div>
-                      )}
+                        ) : (
+                          <span style={{color:'#d97706',fontSize:'0.85rem',fontWeight:500}}>⚠️ No resume</span>
+                        )}
+                      </div>
                       <div className="detail-row">
                         <span className="label">Applied:</span>
                         <span>{new Date(app.appliedDate).toLocaleDateString()}</span>
@@ -741,10 +784,155 @@ const EmployerDashboard = () => {
         )}
 
         {selectedTab === 'profile' && (
-          <div className="placeholder-tab">
-            <div className="placeholder-icon">🏢</div>
-            <h2>Company Profile</h2>
-            <p>Manage your company information</p>
+          <div className="company-tab">
+            <div className="company-header">
+              <div className="company-avatar">
+                <span>🏢</span>
+              </div>
+              <div className="company-header-info">
+                <h2>{companyProfile.companyName || 'Your Company'}</h2>
+                <p>{companyProfile.industry || 'Set your company industry'}</p>
+              </div>
+            </div>
+
+            {companyProfileSaved && (
+              <div className="save-success-banner">
+                ✅ Company profile saved successfully!
+              </div>
+            )}
+
+            <form
+              className="company-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setCompanyProfileSaved(true);
+                setTimeout(() => setCompanyProfileSaved(false), 3000);
+              }}
+            >
+              <div className="form-section-header">Company Information</div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Company Name *</label>
+                  <input
+                    type="text"
+                    value={companyProfile.companyName}
+                    onChange={(e) => setCompanyProfile({...companyProfile, companyName: e.target.value})}
+                    placeholder="e.g., Acme Corp"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Industry *</label>
+                  <select
+                    value={companyProfile.industry}
+                    onChange={(e) => setCompanyProfile({...companyProfile, industry: e.target.value})}
+                  >
+                    <option value="">Select Industry</option>
+                    <option>Technology</option>
+                    <option>Healthcare</option>
+                    <option>Finance</option>
+                    <option>Education</option>
+                    <option>Marketing</option>
+                    <option>Sales</option>
+                    <option>Design</option>
+                    <option>Engineering</option>
+                    <option>Operations</option>
+                    <option>Retail</option>
+                    <option>Manufacturing</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Company Size</label>
+                  <select
+                    value={companyProfile.companySize}
+                    onChange={(e) => setCompanyProfile({...companyProfile, companySize: e.target.value})}
+                  >
+                    <option value="">Select Size</option>
+                    <option value="1-10">1–10 employees</option>
+                    <option value="11-50">11–50 employees</option>
+                    <option value="51-200">51–200 employees</option>
+                    <option value="201-500">201–500 employees</option>
+                    <option value="501-1000">501–1,000 employees</option>
+                    <option value="1000+">1,000+ employees</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Year Founded</label>
+                  <input
+                    type="number"
+                    value={companyProfile.founded}
+                    onChange={(e) => setCompanyProfile({...companyProfile, founded: e.target.value})}
+                    placeholder="e.g., 2010"
+                    min="1800"
+                    max={new Date().getFullYear()}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Location *</label>
+                <input
+                  type="text"
+                  value={companyProfile.location}
+                  onChange={(e) => setCompanyProfile({...companyProfile, location: e.target.value})}
+                  placeholder="e.g., New York, NY"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Company Website</label>
+                <input
+                  type="url"
+                  value={companyProfile.website}
+                  onChange={(e) => setCompanyProfile({...companyProfile, website: e.target.value})}
+                  placeholder="https://yourcompany.com"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>About the Company</label>
+                <textarea
+                  value={companyProfile.description}
+                  onChange={(e) => setCompanyProfile({...companyProfile, description: e.target.value})}
+                  rows="5"
+                  placeholder="Describe your company, culture, and mission..."
+                />
+              </div>
+
+              <div className="form-section-header">Contact Information</div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Contact Email *</label>
+                  <input
+                    type="email"
+                    value={companyProfile.contactEmail}
+                    onChange={(e) => setCompanyProfile({...companyProfile, contactEmail: e.target.value})}
+                    placeholder="hiring@yourcompany.com"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Contact Phone</label>
+                  <input
+                    type="tel"
+                    value={companyProfile.contactPhone}
+                    onChange={(e) => setCompanyProfile({...companyProfile, contactPhone: e.target.value})}
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button type="submit" className="btn-submit">Save Company Profile</button>
+              </div>
+            </form>
           </div>
         )}
       </div>
@@ -815,66 +1003,145 @@ const EmployerDashboard = () => {
             <div className="modal-header">
               <div className="header-content">
                 <span className="profile-icon">👤</span>
-                <h3>{selectedApplicant.workerName}</h3>
+                <div>
+                  <h3 style={{margin:0}}>{selectedApplicant.workerName}</h3>
+                  {selectedApplicant.workerTitle && (
+                    <p style={{margin:'2px 0 0',fontSize:'0.9rem',color:'#667eea',fontWeight:500}}>{selectedApplicant.workerTitle}</p>
+                  )}
+                </div>
               </div>
               <button onClick={() => setShowApplicantProfile(false)} className="btn-close">✕</button>
             </div>
             <div className="modal-body">
-              <div className="profile-section">
-                <label>Job Title</label>
-                <p>{selectedApplicant.workerTitle}</p>
+
+              {/* Status + Applied For */}
+              <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1rem'}}>
+                <div className="profile-section highlight" style={{flex:1,minWidth:'150px',margin:0}}>
+                  <label>Applied For</label>
+                  <p className="job-title" style={{margin:0}}>{selectedApplicant.jobTitle}</p>
+                </div>
+                <div className="profile-section status-section" style={{flex:'0 0 auto',margin:0}}>
+                  <label>Status</label>
+                  <div
+                    className="status-badge-large"
+                    style={{ background: getStatusColor(selectedApplicant.status) }}
+                  >
+                    {selectedApplicant.status}
+                  </div>
+                </div>
               </div>
-              <div className="profile-section">
-                <label>Email</label>
-                <p>{selectedApplicant.workerEmail}</p>
+
+              {/* Resume - most prominent */}
+              <div style={{
+                background: selectedApplicant.resumeUrl ? '#f0fdf4' : '#fffbeb',
+                border: `1px solid ${selectedApplicant.resumeUrl ? '#86efac' : '#fcd34d'}`,
+                borderRadius:'8px',
+                padding:'1rem 1.25rem',
+                marginBottom:'1rem',
+                display:'flex',
+                alignItems:'center',
+                justifyContent:'space-between',
+                gap:'1rem',
+                flexWrap:'wrap'
+              }}>
+                <div>
+                  <div style={{fontWeight:700,color: selectedApplicant.resumeUrl ? '#15803d' : '#92400e',marginBottom:'0.2rem'}}>
+                    {selectedApplicant.resumeUrl ? '📄 Resume Attached' : '⚠️ No Resume Provided'}
+                  </div>
+                  <div style={{fontSize:'0.85rem',color: selectedApplicant.resumeUrl ? '#166534' : '#78350f'}}>
+                    {selectedApplicant.resumeUrl
+                      ? 'Click to open the applicant\'s resume'
+                      : 'The applicant has not uploaded a resume to their profile'}
+                  </div>
+                </div>
+                {selectedApplicant.resumeUrl && (
+                  <a
+                    href={getFileUrl(selectedApplicant.resumeUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      padding:'0.6rem 1.25rem',
+                      background:'#16a34a',
+                      color:'white',
+                      borderRadius:'6px',
+                      textDecoration:'none',
+                      fontWeight:600,
+                      fontSize:'0.9rem',
+                      whiteSpace:'nowrap'
+                    }}
+                  >
+                    📥 View Resume ↗
+                  </a>
+                )}
               </div>
+
+              {/* Contact Info */}
               <div className="profile-section">
-                <label>Phone</label>
-                <p>{selectedApplicant.workerPhone}</p>
+                <label>Contact</label>
+                <div style={{display:'flex',flexDirection:'column',gap:'0.3rem'}}>
+                  <a href={`mailto:${selectedApplicant.workerEmail}`} style={{color:'#2563eb',fontSize:'0.9rem'}}>
+                    ✉️ {selectedApplicant.workerEmail}
+                  </a>
+                  {selectedApplicant.workerPhone && (
+                    <span style={{fontSize:'0.9rem',color:'#374151'}}>📞 {selectedApplicant.workerPhone}</span>
+                  )}
+                  {selectedApplicant.workerLocation && (
+                    <span style={{fontSize:'0.9rem',color:'#374151'}}>📍 {selectedApplicant.workerLocation}</span>
+                  )}
+                </div>
               </div>
-              <div className="profile-section">
-                <label>Location</label>
-                <p>{selectedApplicant.workerLocation}</p>
-              </div>
-              <div className="profile-section">
-                <label>Skills</label>
-                <p>{selectedApplicant.workerSkills}</p>
-              </div>
+
+              {/* Skills */}
+              {selectedApplicant.workerSkills && (
+                <div className="profile-section">
+                  <label>Skills</label>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'0.4rem',marginTop:'0.25rem'}}>
+                    {selectedApplicant.workerSkills.split(',').map((skill, i) => (
+                      <span key={i} style={{
+                        background:'#ede9fe',
+                        color:'#5b21b6',
+                        padding:'0.2rem 0.6rem',
+                        borderRadius:'12px',
+                        fontSize:'0.82rem',
+                        fontWeight:500
+                      }}>
+                        {skill.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cover Letter */}
               {selectedApplicant.coverLetter && (
                 <div className="profile-section">
                   <label>Cover Letter</label>
-                  <p className="multiline">{selectedApplicant.coverLetter}</p>
+                  <div style={{
+                    background:'#f8fafc',
+                    border:'1px solid #e2e8f0',
+                    borderRadius:'6px',
+                    padding:'0.75rem 1rem',
+                    fontSize:'0.9rem',
+                    color:'#374151',
+                    lineHeight:'1.6',
+                    whiteSpace:'pre-wrap',
+                    maxHeight:'180px',
+                    overflowY:'auto'
+                  }}>
+                    {selectedApplicant.coverLetter}
+                  </div>
                 </div>
               )}
-              {selectedApplicant.resumeUrl && (
-                <div className="profile-section">
-                  <label>Resume</label>
-                  <a href={selectedApplicant.resumeUrl} target="_blank" rel="noopener noreferrer">
-                    View Resume
-                  </a>
-                </div>
-              )}
-              <div className="profile-section highlight">
-                <label>Applied For</label>
-                <p className="job-title">{selectedApplicant.jobTitle}</p>
-              </div>
-              <div className="profile-section status-section">
-                <label>Status</label>
-                <div 
-                  className="status-badge-large" 
-                  style={{ background: getStatusColor(selectedApplicant.status) }}
-                >
-                  {selectedApplicant.status}
-                </div>
-              </div>
+
+              {/* Applied Date */}
               <div className="profile-section">
                 <label>Applied Date</label>
-                <p>{new Date(selectedApplicant.appliedDate).toLocaleString()}</p>
+                <p style={{margin:0}}>{new Date(selectedApplicant.appliedDate).toLocaleString()}</p>
               </div>
             </div>
             <div className="modal-footer">
               <button onClick={() => setShowApplicantProfile(false)} className="btn-cancel">Close</button>
-              <button 
+              <button
                 onClick={() => {
                   setShowApplicantProfile(false);
                   handleMessageApplicant(selectedApplicant);

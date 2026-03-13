@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { updateProfile, uploadResume } from '../services/apiService';
+import { updateProfile, uploadResumeFile } from '../services/apiService';
+import { getFileUrl } from '../services/apiService';
 import './WorkerProfile.css';
 
 const WorkerProfile = () => {
@@ -70,20 +71,17 @@ const WorkerProfile = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // In a real application, you would upload to cloud storage (S3, Azure Blob, etc.)
-    // For now, we'll simulate with a local file URL
-    const fakeUrl = `https://storage.rightfitgigs.com/resumes/${user.id}/${file.name}`;
-    
     setMessage({ type: '', text: '' });
     setIsSaving(true);
 
     try {
-      const updatedData = await uploadResume(user.id, fakeUrl);
+      const updatedData = await uploadResumeFile(user.id, file);
       login(updatedData);
-      setResumeUrl(fakeUrl);
-      setMessage({ type: 'success', text: 'Resume uploaded successfully!' });
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to upload resume. Please try again.' });
+      setResumeUrl(updatedData.resumeUrl);
+      setMessage({ type: 'success', text: 'Resume uploaded successfully! Employers can now view it.' });
+    } catch (err) {
+      const msg = err?.response?.data || 'Failed to upload resume. Please try again.';
+      setMessage({ type: 'error', text: typeof msg === 'string' ? msg : 'Failed to upload resume.' });
     } finally {
       setIsSaving(false);
     }
@@ -286,14 +284,20 @@ const WorkerProfile = () => {
                   accept=".pdf,.doc,.docx"
                   onChange={handleResumeUpload}
                   style={{ display: 'none' }}
+                  disabled={isSaving}
                 />
                 <div className="upload-box">
-                  {resumeUrl ? (
+                  {isSaving ? (
+                    <>
+                      <div className="upload-icon">⏳</div>
+                      <p>Uploading...</p>
+                    </>
+                  ) : resumeUrl ? (
                     <>
                       <div className="upload-icon success">✓</div>
                       <p>Resume Uploaded</p>
-                      <small>{resumeUrl.split('/').pop()}</small>
-                      <button className="btn-secondary">Replace Resume</button>
+                      <small>Click to replace</small>
+                      <button type="button" className="btn-secondary" style={{pointerEvents:'none'}}>Replace Resume</button>
                     </>
                   ) : (
                     <>
@@ -304,6 +308,20 @@ const WorkerProfile = () => {
                   )}
                 </div>
               </label>
+              {resumeUrl && !isSaving && (
+                <a
+                  href={getFileUrl(resumeUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display:'block',textAlign:'center',marginTop:'0.5rem',
+                    color:'#2563eb',fontSize:'0.85rem',textDecoration:'none'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  👁️ View your resume
+                </a>
+              )}
             </div>
 
             <div className="form-group">

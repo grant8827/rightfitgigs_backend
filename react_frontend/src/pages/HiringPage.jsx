@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getJobs, submitApplication } from '../services/apiService';
 import JobDetailsModal from '../components/JobDetailsModal';
+import ApplyModal from '../components/ApplyModal';
 import AdRenderer from '../components/AdRenderer';
 import './HiringPage.css';
 
@@ -14,6 +15,8 @@ const HiringPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [applyJob, setApplyJob] = useState(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   useEffect(() => {
     loadJobs();
@@ -55,28 +58,23 @@ const HiringPage = () => {
 
   const handleApply = async (jobId, coverLetter) => {
     if (!user) {
-      console.log('Please login to apply for jobs');
+      navigate('/login');
       return;
     }
-
-    try {
-      await submitApplication({
-        jobId,
-        workerId: user.id,
-        coverLetter
-      });
-    } catch (err) {
-      console.error('Application error:', err);
-      throw err;
-    }
+    await submitApplication({
+      jobId,
+      workerId: user.id,
+      coverLetter
+    });
   };
 
-  const handleQuickApply = async (job) => {
-    try {
-      await handleApply(job.id, '');
-    } catch {
-      // Error already handled in handleApply
+  const handleOpenApply = (job) => {
+    if (!user) {
+      navigate('/login');
+      return;
     }
+    setApplyJob(job);
+    setShowApplyModal(true);
   };
 
   return (
@@ -141,7 +139,7 @@ const HiringPage = () => {
                     </button>
                     <button 
                       className="btn-primary" 
-                      onClick={() => handleQuickApply(job)}
+                      onClick={() => handleOpenApply(job)}
                     >
                       Apply Now
                     </button>
@@ -159,6 +157,14 @@ const HiringPage = () => {
         onClose={() => setIsModalOpen(false)}
         onApply={handleApply}
       />
+
+      {showApplyModal && applyJob && (
+        <ApplyModal
+          job={applyJob}
+          onClose={() => { setShowApplyModal(false); setApplyJob(null); }}
+          onSubmit={handleApply}
+        />
+      )}
     </div>
   );
 };
