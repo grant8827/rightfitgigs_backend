@@ -17,4 +17,4 @@ COPY --from=build /app/public/serve.json ./dist/serve.json
 
 EXPOSE 3000
 
-CMD ["serve", "-s", "dist", "--listen", "tcp://0.0.0.0:3000"]
+CMD ["sh", "-c", "serve -s dist --listen tcp://0.0.0.0:${PORT:-3000}"]
