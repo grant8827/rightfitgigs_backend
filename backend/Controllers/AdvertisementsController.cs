@@ -119,7 +119,9 @@ namespace RightFitGigs.Controllers
                         return BadRequest(new { message = "Invalid file type. Please upload an image or video file." });
                     }
 
-                    var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads", "advertisements");
+                    var uploadsRoot = Environment.GetEnvironmentVariable("UPLOADS_PATH")
+                        ?? Path.Combine(_environment.ContentRootPath, "uploads");
+                    var uploadsPath = Path.Combine(uploadsRoot, "advertisements");
                     Directory.CreateDirectory(uploadsPath);
 
                     var fileName = $"{Guid.NewGuid()}{fileExtension}";
@@ -237,15 +239,20 @@ namespace RightFitGigs.Controllers
                 // Handle file update if provided
                 if (dto.File != null && dto.File.Length > 0)
                 {
-                    // Delete old file
-                    var oldFilePath = Path.Combine(_environment.ContentRootPath, advertisement.FileUrl.TrimStart('/'));
+                    var uploadsRoot = Environment.GetEnvironmentVariable("UPLOADS_PATH")
+                        ?? Path.Combine(_environment.ContentRootPath, "uploads");
+
+                    // Delete old file — FileUrl is "/uploads/...", strip leading "/uploads/" since uploadsRoot already points to uploads/
+                    var oldRelPath = advertisement.FileUrl.TrimStart('/');
+                    if (oldRelPath.StartsWith("uploads/")) oldRelPath = oldRelPath["uploads/".Length..];
+                    var oldFilePath = Path.Combine(uploadsRoot, oldRelPath);
                     if (System.IO.File.Exists(oldFilePath))
                     {
                         System.IO.File.Delete(oldFilePath);
                     }
 
                     // Save new file
-                    var uploadsPath = Path.Combine(_environment.ContentRootPath, "uploads", "advertisements");
+                    var uploadsPath = Path.Combine(uploadsRoot, "advertisements");
                     Directory.CreateDirectory(uploadsPath);
 
                     var fileExtension = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
@@ -299,7 +306,11 @@ namespace RightFitGigs.Controllers
                 }
 
                 // Delete file
-                var filePath = Path.Combine(_environment.ContentRootPath, advertisement.FileUrl.TrimStart('/'));
+                var uploadsRoot = Environment.GetEnvironmentVariable("UPLOADS_PATH")
+                    ?? Path.Combine(_environment.ContentRootPath, "uploads");
+                var relPath = advertisement.FileUrl.TrimStart('/');
+                if (relPath.StartsWith("uploads/")) relPath = relPath["uploads/".Length..];
+                var filePath = Path.Combine(uploadsRoot, relPath);
                 if (System.IO.File.Exists(filePath))
                 {
                     System.IO.File.Delete(filePath);

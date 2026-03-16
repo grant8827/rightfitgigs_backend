@@ -393,7 +393,9 @@ namespace RightFitGigs.Controllers
                     return NotFound("User not found");
 
                 // Save file to uploads/resumes/{userId}/
-                var resumesPath = Path.Combine(_environment.ContentRootPath, "uploads", "resumes", id);
+                var uploadsRoot = Environment.GetEnvironmentVariable("UPLOADS_PATH")
+                    ?? Path.Combine(_environment.ContentRootPath, "uploads");
+                var resumesPath = Path.Combine(uploadsRoot, "resumes", id);
                 Directory.CreateDirectory(resumesPath);
 
                 // Delete any old resume files for this user

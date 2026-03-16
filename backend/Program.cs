@@ -85,7 +85,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles(); // Enable static file serving
 
-var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+// Use UPLOADS_PATH env var if set (Railway persistent volume), otherwise fall back to local path
+var uploadsPath = Environment.GetEnvironmentVariable("UPLOADS_PATH")
+    ?? Path.Combine(app.Environment.ContentRootPath, "uploads");
 Directory.CreateDirectory(uploadsPath);
 
 app.UseStaticFiles(new StaticFileOptions
@@ -95,7 +97,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 // Also serve resumes subfolder
-var resumesPath = Path.Combine(app.Environment.ContentRootPath, "uploads", "resumes");
+var resumesPath = Path.Combine(uploadsPath, "resumes");
 Directory.CreateDirectory(resumesPath);
 app.UseStaticFiles(new StaticFileOptions
 {
