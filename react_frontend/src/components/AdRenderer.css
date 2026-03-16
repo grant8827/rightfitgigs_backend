@@ -95,12 +95,10 @@
 }
 
 .ad-inline-pinned {
-  width: calc(100% + 2rem);
-  margin: 0 -1rem;
+  width: 100%;
+  margin: 0;
   background: #fff;
-  border-left: none;
-  border-right: none;
-  border-top: 1px solid #dbe3ef;
+  border: none;
   border-bottom: 1px solid #dbe3ef;
   border-radius: 0;
   overflow: hidden;
@@ -160,7 +158,7 @@
 }
 
 .ad-meta.compact {
-  padding: 10px 1rem;
+  padding: 10px 12px;
 }
 
 .ad-meta.compact h4 {
