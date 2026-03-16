@@ -58,9 +58,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
 
   Future<void> _loadAds() async {
     try {
-      final ads = await ApiService.getAdvertisements(
-        activeOnly: true,
-      );
+      final ads = await ApiService.getAdvertisements(activeOnly: true);
       if (!mounted) return;
       setState(() {
         _ads = ads;
@@ -358,7 +356,8 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
                   )
                 else
                   _buildPlaceholder(),
-                if (ad.description.isNotEmpty || (ad.businessName?.isNotEmpty ?? false))
+                if (ad.description.isNotEmpty ||
+                    (ad.businessName?.isNotEmpty ?? false))
                   Padding(
                     padding: const EdgeInsets.all(10),
                     child: Column(
@@ -376,10 +375,15 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            ad.description.isNotEmpty ? ad.description : (ad.businessName ?? 'Sponsored'),
+                            ad.description.isNotEmpty
+                                ? ad.description
+                                : (ad.businessName ?? 'Sponsored'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ],
@@ -472,7 +476,8 @@ class _PopupAdDialog extends StatelessWidget {
                       alignment: Alignment.center,
                       child: const Text('No media'),
                     ),
-                  if (ad.description.isNotEmpty || (ad.businessName?.isNotEmpty ?? false))
+                  if (ad.description.isNotEmpty ||
+                      (ad.businessName?.isNotEmpty ?? false))
                     Padding(
                       padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
                       child: Column(
@@ -490,10 +495,15 @@ class _PopupAdDialog extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 3),
                             child: Text(
-                              ad.description.isNotEmpty ? ad.description : (ad.businessName ?? 'Sponsored'),
+                              ad.description.isNotEmpty
+                                  ? ad.description
+                                  : (ad.businessName ?? 'Sponsored'),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                           ),
                         ],
