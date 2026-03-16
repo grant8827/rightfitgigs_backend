@@ -1,20 +1,16 @@
-FROM node:20-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY backend/backend.csproj ./
+RUN dotnet restore backend.csproj
+
+COPY backend/ ./
+RUN dotnet publish backend.csproj -c Release -o /app/out
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
+COPY --from=build /app/out ./
 
-COPY react_frontend/package.json react_frontend/package-lock.json ./
-RUN npm install
+EXPOSE 8080
 
-COPY react_frontend/ .
-RUN npm run build
-
-FROM node:20-alpine AS runtime
-WORKDIR /app
-
-RUN npm install -g serve
-
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/public/serve.json ./dist/serve.json
-
-EXPOSE 3000
-
-CMD ["sh", "-c", "serve -s dist --listen tcp://0.0.0.0:${PORT:-3000}"]
+CMD ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} dotnet backend.dll"]
