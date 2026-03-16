@@ -5,6 +5,7 @@ import WorkerProfile from '../components/WorkerProfile';
 import JobDetailsModal from '../components/JobDetailsModal';
 import ApplyModal from '../components/ApplyModal';
 import MessagesPage from './MessagesPage';
+import AdRenderer from '../components/AdRenderer';
 import { getJobs, submitApplication, getWorkerApplications } from '../services/apiService';
 import './WorkerDashboard.css';
 
@@ -153,40 +154,51 @@ const WorkerDashboard = () => {
         </div>
       </header>
 
-      <nav className="dashboard-tabs">
-        <button 
-          className={selectedTab === 'home' ? 'active' : ''}
-          onClick={() => setSelectedTab('home')}
-        >
-          🏠 Home
-        </button>
-        <button 
-          className={selectedTab === 'jobs' ? 'active' : ''}
-          onClick={() => setSelectedTab('jobs')}
-        >
-          🔍 Jobs
-        </button>
-        <button 
-          className={selectedTab === 'applications' ? 'active' : ''}
-          onClick={() => setSelectedTab('applications')}
-        >
-          📋 Applications
-        </button>
-        <button 
-          className={selectedTab === 'messages' ? 'active' : ''}
-          onClick={() => setSelectedTab('messages')}
-        >
-          💬 Messages
-        </button>
-        <button 
-          className={selectedTab === 'profile' ? 'active' : ''}
-          onClick={() => setSelectedTab('profile')}
-        >
-          👤 Profile
-        </button>
-      </nav>
-
-      <div className="dashboard-content">
+      <div className="dashboard-body">
+        <aside className="dashboard-sidebar-left">
+          <nav className="sidebar-nav">
+            <button
+              className={selectedTab === 'home' ? 'active' : ''}
+              onClick={() => setSelectedTab('home')}
+            >
+              <span className="nav-icon">🏠</span>
+              <span>Home</span>
+            </button>
+            <button
+              className={selectedTab === 'jobs' ? 'active' : ''}
+              onClick={() => setSelectedTab('jobs')}
+            >
+              <span className="nav-icon">🔍</span>
+              <span>Jobs</span>
+            </button>
+            <button
+              className={selectedTab === 'applications' ? 'active' : ''}
+              onClick={() => setSelectedTab('applications')}
+            >
+              <span className="nav-icon">📋</span>
+              <span>Applications</span>
+            </button>
+            <button
+              className={selectedTab === 'messages' ? 'active' : ''}
+              onClick={() => setSelectedTab('messages')}
+            >
+              <span className="nav-icon">💬</span>
+              <span>Messages</span>
+            </button>
+            <button
+              className={selectedTab === 'profile' ? 'active' : ''}
+              onClick={() => setSelectedTab('profile')}
+            >
+              <span className="nav-icon">👤</span>
+              <span>Profile</span>
+            </button>
+          </nav>
+          <div className="sidebar-left-ad">
+            <AdRenderer showPopup={false} showPinned={true} pinnedMode="inline" inlineSlot="SidebarLeft" />
+          </div>
+        </aside>
+        <main className="dashboard-main">
+          <div className="dashboard-content">
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
         
@@ -358,6 +370,11 @@ const WorkerDashboard = () => {
         {selectedTab === 'profile' && (
           <WorkerProfile />
         )}
+          </div>
+        </main>
+        <aside className="dashboard-sidebar-right">
+          <AdRenderer showPopup={true} showPinned={true} pinnedMode="inline" inlineSlot="SidebarRight" />
+        </aside>
       </div>
 
       <JobDetailsModal 

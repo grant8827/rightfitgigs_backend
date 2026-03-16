@@ -9,6 +9,10 @@ import './AdRenderer.css';
 
 const POLL_INTERVAL_MS = 15000;
 const POPUP_DISMISSED_KEY = 'dismissed-popup-ads';
+const POPUP_DISPLAY_MS = 45000;
+const POPUP_GAP_MS = 8000;
+const POPUP_DISMISSED_DELAY_MS = 60000;
+const POPUP_ALL_DISMISSED_DELAY_MS = 180000;
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi'];
 
@@ -60,22 +64,36 @@ const AdRenderer = ({
     const raw = sessionStorage.getItem(POPUP_DISMISSED_KEY);
     return raw ? JSON.parse(raw) : [];
   });
+  const [popupIndex, setPopupIndex] = useState(0);
+  const [isPopupVisible, setIsPopupVisible] = useState(true);
+  const [popupHeld, setPopupHeld] = useState(false);
   const viewedRef = useRef(new Set());
+  const popupTimerRef = useRef(null);
+  const popupFadeRef = useRef(null);
 
   const pinnedFadeAds = useMemo(() => {
-    const pinnedAds = ads.filter((ad) => ad.placement === 'PinnedFade');
-
     if (pinnedMode === 'inline' && inlineSlot) {
-      const slotAds = pinnedAds.filter((ad) => ad.position === inlineSlot);
-      return slotAds.length > 0 ? slotAds : pinnedAds;
+      // In inline/sidebar mode, match Sidebar placement ads by position slot,
+      // then fall back to PinnedFade ads matching the same slot
+      const sidebarSlotAds = ads.filter(
+        (ad) => ad.placement === 'Sidebar' && ad.position === inlineSlot
+      );
+      if (sidebarSlotAds.length > 0) return sidebarSlotAds;
+
+      const pinnedSlotAds = ads.filter(
+        (ad) => ad.placement === 'PinnedFade' && ad.position === inlineSlot
+      );
+      return pinnedSlotAds;
     }
 
     if (pinnedMode === 'fixed') {
       const fixedPositions = ['TopLeft', 'TopRight', 'BottomLeft', 'BottomRight', 'Center'];
-      return pinnedAds.filter((ad) => fixedPositions.includes(ad.position));
+      return ads.filter(
+        (ad) => ad.placement === 'PinnedFade' && fixedPositions.includes(ad.position)
+      );
     }
 
-    return pinnedAds;
+    return ads.filter((ad) => ad.placement === 'PinnedFade');
   }, [ads, pinnedMode, inlineSlot]);
 
   const [pinnedIndex, setPinnedIndex] = useState(0);
@@ -98,10 +116,46 @@ const AdRenderer = ({
     return () => clearInterval(interval);
   }, []);
 
+  // Clean up popup timers on unmount
+  useEffect(() => {
+    return () => clearPopupTimers();
+  }, []);
+
+  const popupAds = useMemo(
+    () => ads.filter((ad) => ad.placement === 'Popup'),
+    [ads]
+  );
+
   const popupAd = useMemo(() => {
-    const popups = ads.filter((ad) => ad.placement === 'Popup');
-    return popups.find((ad) => !dismissedPopupIds.includes(ad.id)) || null;
-  }, [ads, dismissedPopupIds]);
+    if (popupHeld || popupAds.length === 0) return null;
+    return popupAds[popupIndex % popupAds.length] || null;
+  }, [popupAds, popupIndex, popupHeld]);
+
+  // Clear any pending popup timers
+  const clearPopupTimers = () => {
+    clearTimeout(popupTimerRef.current);
+    clearTimeout(popupFadeRef.current);
+  };
+
+  // Advance to the next popup in the cycle with a fade transition
+  const advancePopup = (nextIndex) => {
+    setIsPopupVisible(false);
+    // Stay hidden for POPUP_GAP_MS, then show the next popup
+    popupFadeRef.current = setTimeout(() => {
+      setPopupIndex(nextIndex);
+      setIsPopupVisible(true);
+    }, POPUP_GAP_MS);
+  };
+
+  // Auto-advance every POPUP_DISPLAY_MS
+  useEffect(() => {
+    if (!showPopup || popupHeld || popupAds.length === 0) return;
+    clearTimeout(popupTimerRef.current);
+    popupTimerRef.current = setTimeout(() => {
+      advancePopup((popupIndex + 1) % popupAds.length);
+    }, POPUP_DISPLAY_MS);
+    return () => clearTimeout(popupTimerRef.current);
+  }, [showPopup, popupHeld, popupAds.length, popupIndex]);
 
   const pinnedFadeAd = useMemo(() => {
     if (pinnedFadeAds.length === 0) {
@@ -155,13 +209,39 @@ const AdRenderer = ({
   }, [popupAd, pinnedFadeAd]);
 
   const dismissPopup = (adId) => {
-    if (!adId) {
-      return;
-    }
+    if (!adId) return;
+    clearPopupTimers();
+    setIsPopupVisible(false);
 
-    const updated = [...dismissedPopupIds, adId];
-    setDismissedPopupIds(updated);
-    sessionStorage.setItem(POPUP_DISMISSED_KEY, JSON.stringify(updated));
+    const updatedDismissed = [...dismissedPopupIds, adId];
+    setDismissedPopupIds(updatedDismissed);
+    sessionStorage.setItem(POPUP_DISMISSED_KEY, JSON.stringify(updatedDismissed));
+
+    const allDismissed = popupAds.every((ad) => updatedDismissed.includes(ad.id));
+
+    if (allDismissed) {
+      // All popups dismissed — wait 3 minutes then restart the full cycle
+      setPopupHeld(true);
+      popupTimerRef.current = setTimeout(() => {
+        const resetDismissed = [];
+        setDismissedPopupIds(resetDismissed);
+        sessionStorage.removeItem(POPUP_DISMISSED_KEY);
+        setPopupIndex(0);
+        setPopupHeld(false);
+        setIsPopupVisible(true);
+      }, POPUP_ALL_DISMISSED_DELAY_MS);
+    } else {
+      // Some remain — wait 1 minute then show next undismissed
+      setPopupHeld(true);
+      popupTimerRef.current = setTimeout(() => {
+        const nextAd = popupAds.find((ad) => !updatedDismissed.includes(ad.id));
+        if (nextAd) {
+          setPopupIndex(popupAds.indexOf(nextAd));
+        }
+        setPopupHeld(false);
+        setIsPopupVisible(true);
+      }, POPUP_DISMISSED_DELAY_MS);
+    }
   };
 
   const handleAdClick = async (ad) => {
@@ -198,28 +278,30 @@ const AdRenderer = ({
 
   return (
     <>
-      {showPopup && popupAd ? (
-        <div className="ad-popup-overlay" role="dialog" aria-label="Promotional popup">
-          <div className={`ad-popup-card ${getPositionClass(popupAd.position)} ${getPopupSlideClass(popupAd.position)}`}>
-            {popupAd.isDismissible ? (
-              <button
-                type="button"
-                className="ad-close-btn"
-                onClick={() => dismissPopup(popupAd.id)}
-                aria-label="Close advertisement"
-              >
-                ×
-              </button>
+      {showPopup && popupAd && pinnedMode !== 'inline' ? (
+        <div
+          className={`ad-popup-card ${getPositionClass(popupAd.position)} ${getPopupSlideClass(popupAd.position)} ${isPopupVisible ? 'is-visible' : 'is-hidden'}`}
+          role="dialog"
+          aria-label="Promotional popup"
+        >
+          {popupAd.isDismissible ? (
+            <button
+              type="button"
+              className="ad-close-btn"
+              onClick={() => dismissPopup(popupAd.id)}
+              aria-label="Close advertisement"
+            >
+              ×
+            </button>
+          ) : null}
+          <div className="ad-content" onClick={() => handleAdClick(popupAd)}>
+            {renderMedia(popupAd, 'ad-media')}
+            {(popupAd.description || popupAd.businessName) ? (
+              <div className="ad-meta">
+                <h4>{popupAd.title}</h4>
+                <p>{popupAd.description || popupAd.businessName}</p>
+              </div>
             ) : null}
-            <div className="ad-content" onClick={() => handleAdClick(popupAd)}>
-              {renderMedia(popupAd, 'ad-media')}
-              {(popupAd.description || popupAd.businessName) ? (
-                <div className="ad-meta">
-                  <h4>{popupAd.title}</h4>
-                  <p>{popupAd.description || popupAd.businessName}</p>
-                </div>
-              ) : null}
-            </div>
           </div>
         </div>
       ) : null}
@@ -266,6 +348,34 @@ const AdRenderer = ({
               <p>{pinnedFadeAd.description || pinnedFadeAd.businessName}</p>
             </div>
           ) : null}
+        </section>
+      ) : null}
+
+      {showPopup && popupAd && pinnedMode === 'inline' ? (
+        <section
+          className={`ad-inline-popup ${isPopupVisible ? 'is-visible' : 'is-hidden'}`}
+          role="complementary"
+          aria-label="Sponsored"
+        >
+          {popupAd.isDismissible ? (
+            <button
+              type="button"
+              className="ad-close-btn"
+              onClick={() => dismissPopup(popupAd.id)}
+              aria-label="Close advertisement"
+            >
+              ×
+            </button>
+          ) : null}
+          <div className="ad-content" onClick={() => handleAdClick(popupAd)}>
+            {renderMedia(popupAd, 'ad-media')}
+            {(popupAd.description || popupAd.businessName) ? (
+              <div className="ad-meta compact">
+                <h4>{popupAd.title}</h4>
+                <p>{popupAd.description || popupAd.businessName}</p>
+              </div>
+            ) : null}
+          </div>
         </section>
       ) : null}
     </>

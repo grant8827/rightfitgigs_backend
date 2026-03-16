@@ -40,6 +40,7 @@ const LandingPage = () => {
 
   return (
     <div className="landing-page">
+      <AdRenderer showPopup={true} showPinned={false} />
       <Navbar />
       
       {/* Hero Section */}

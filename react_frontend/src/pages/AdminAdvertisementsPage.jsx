@@ -64,6 +64,7 @@ const AdminAdvertisementsPage = () => {
 
   const popupAds = useMemo(() => ads.filter((ad) => ad.placement === 'Popup'), [ads]);
   const pinnedFadeAds = useMemo(() => ads.filter((ad) => ad.placement === 'PinnedFade'), [ads]);
+  const sidebarAds = useMemo(() => ads.filter((ad) => ad.placement === 'Sidebar'), [ads]);
 
   const resetForm = () => {
     setForm(initialForm);
@@ -80,6 +81,17 @@ const AdminAdvertisementsPage = () => {
 
     if (type === 'file') {
       setForm((prev) => ({ ...prev, file: files?.[0] || null }));
+      return;
+    }
+
+    if (name === 'placement') {
+      setForm((prev) => ({
+        ...prev,
+        placement: value,
+        position: value === 'Sidebar'
+          ? 'SidebarRight'
+          : (prev.position === 'SidebarRight' || prev.position === 'SidebarLeft' ? 'BottomRight' : prev.position),
+      }));
       return;
     }
 
@@ -240,6 +252,7 @@ const AdminAdvertisementsPage = () => {
             <select name="placement" value={form.placement} onChange={handleChange}>
               <option value="Popup">Popup</option>
               <option value="PinnedFade">Pinned Fade</option>
+              <option value="Sidebar">Sidebar</option>
             </select>
           </label>
 
@@ -254,18 +267,25 @@ const AdminAdvertisementsPage = () => {
 
           <label>
             Position
-            <select name="position" value={form.position} onChange={handleChange}>
-              <option value="BottomRight">Bottom Right</option>
-              <option value="BottomLeft">Bottom Left</option>
-              <option value="TopRight">Top Right</option>
-              <option value="TopLeft">Top Left</option>
-              <option value="Center">Center</option>
-              <option value="HomeBelowHeader">Home - Below Header</option>
-              <option value="HomeLatestAboveJobs">Home - Above Latest Opportunities</option>
-              <option value="JobsBelowSearch">Web Jobs - Below Search</option>
-              <option value="JobsEveryTwoRows">Web Jobs - Every 2 Rows</option>
-              <option value="JobsBelowBrowse">Mobile Jobs - Below Browse Jobs</option>
-            </select>
+            {form.placement === 'Sidebar' ? (
+              <select name="position" value={form.position} onChange={handleChange}>
+                <option value="SidebarRight">Sidebar Right</option>
+                <option value="SidebarLeft">Sidebar Left</option>
+              </select>
+            ) : (
+              <select name="position" value={form.position} onChange={handleChange}>
+                <option value="BottomRight">Bottom Right</option>
+                <option value="BottomLeft">Bottom Left</option>
+                <option value="TopRight">Top Right</option>
+                <option value="TopLeft">Top Left</option>
+                <option value="Center">Center</option>
+                <option value="HomeBelowHeader">Home - Below Header</option>
+                <option value="HomeLatestAboveJobs">Home - Above Latest Opportunities</option>
+                <option value="JobsBelowSearch">Web Jobs - Below Search</option>
+                <option value="JobsEveryTwoRows">Web Jobs - Every 2 Rows</option>
+                <option value="JobsBelowBrowse">Mobile Jobs - Below Browse Jobs</option>
+              </select>
+            )}
           </label>
 
           <label>
@@ -389,6 +409,30 @@ const AdminAdvertisementsPage = () => {
                     <h3>{ad.title?.trim() || 'Media Advertisement'}</h3>
                     <p>
                       {ad.businessName || 'No business name'} • {ad.platform} • {ad.position} • {ad.fadeDurationSeconds}s
+                    </p>
+                  </div>
+                  <div className="admin-ad-item-actions">
+                    <button onClick={() => handleEditAd(ad)} className="edit">
+                      Edit
+                    </button>
+                    <button onClick={() => handleToggleAd(ad.id)}>
+                      {ad.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button className="danger" onClick={() => handleDeleteAd(ad.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </article>
+
+            <article className="admin-ads-list-card">
+              <h2>Sidebar Ads</h2>
+              {sidebarAds.length === 0 ? <p>No sidebar ads yet.</p> : null}
+              {sidebarAds.map((ad) => (
+                <div key={ad.id} className="admin-ad-item">
+                  <div>
+                    <h3>{ad.title?.trim() || 'Media Advertisement'}</h3>
+                    <p>
+                      {ad.businessName || 'No business name'} • {ad.platform} • {ad.position === 'SidebarRight' ? 'Right Sidebar' : 'Left Sidebar'} • {ad.fadeDurationSeconds}s
                     </p>
                   </div>
                   <div className="admin-ad-item-actions">

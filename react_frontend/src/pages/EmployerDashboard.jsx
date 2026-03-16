@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { getJobs, createJob, updateJob, getAllApplications, updateApplicationStatus, deleteJob, toggleJobStatus, getFileUrl } from '../services/apiService';
 import MessagesPage from './MessagesPage';
+import AdRenderer from '../components/AdRenderer';
 import './EmployerDashboard.css';
 
 const EmployerDashboard = () => {
@@ -266,40 +267,51 @@ const EmployerDashboard = () => {
         </div>
       </header>
 
-      <nav className="dashboard-tabs">
-        <button 
-          className={selectedTab === 'home' ? 'active' : ''}
-          onClick={() => setSelectedTab('home')}
-        >
-          🏠 Home
-        </button>
-        <button 
-          className={selectedTab === 'jobs' ? 'active' : ''}
-          onClick={() => setSelectedTab('jobs')}
-        >
-          💼 My Jobs
-        </button>
-        <button 
-          className={selectedTab === 'candidates' ? 'active' : ''}
-          onClick={() => setSelectedTab('candidates')}
-        >
-          👥 Candidates
-        </button>
-        <button 
-          className={selectedTab === 'messages' ? 'active' : ''}
-          onClick={() => setSelectedTab('messages')}
-        >
-          💬 Messages
-        </button>
-        <button 
-          className={selectedTab === 'profile' ? 'active' : ''}
-          onClick={() => setSelectedTab('profile')}
-        >
-          🏢 Company
-        </button>
-      </nav>
-
-      <div className="dashboard-content">
+      <div className="dashboard-body">
+        <aside className="dashboard-sidebar-left">
+          <nav className="sidebar-nav">
+            <button
+              className={selectedTab === 'home' ? 'active' : ''}
+              onClick={() => setSelectedTab('home')}
+            >
+              <span className="nav-icon">🏠</span>
+              <span>Home</span>
+            </button>
+            <button
+              className={selectedTab === 'jobs' ? 'active' : ''}
+              onClick={() => setSelectedTab('jobs')}
+            >
+              <span className="nav-icon">💼</span>
+              <span>My Jobs</span>
+            </button>
+            <button
+              className={selectedTab === 'candidates' ? 'active' : ''}
+              onClick={() => setSelectedTab('candidates')}
+            >
+              <span className="nav-icon">👥</span>
+              <span>Candidates</span>
+            </button>
+            <button
+              className={selectedTab === 'messages' ? 'active' : ''}
+              onClick={() => setSelectedTab('messages')}
+            >
+              <span className="nav-icon">💬</span>
+              <span>Messages</span>
+            </button>
+            <button
+              className={selectedTab === 'profile' ? 'active' : ''}
+              onClick={() => setSelectedTab('profile')}
+            >
+              <span className="nav-icon">🏢</span>
+              <span>Company</span>
+            </button>
+          </nav>
+          <div className="sidebar-left-ad">
+            <AdRenderer showPopup={false} showPinned={true} pinnedMode="inline" inlineSlot="SidebarLeft" />
+          </div>
+        </aside>
+        <main className="dashboard-main">
+          <div className="dashboard-content">
         {selectedTab === 'home' && (
           <div className="home-tab">
             <div className="welcome-card">
@@ -935,6 +947,11 @@ const EmployerDashboard = () => {
             </form>
           </div>
         )}
+          </div>
+        </main>
+        <aside className="dashboard-sidebar-right">
+          <AdRenderer showPopup={true} showPinned={true} pinnedMode="inline" inlineSlot="SidebarRight" />
+        </aside>
       </div>
 
       {/* Job Details Modal */}
