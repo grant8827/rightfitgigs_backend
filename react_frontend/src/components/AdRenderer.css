@@ -96,7 +96,6 @@
 
 .ad-inline-pinned {
   width: calc(100% + 2rem);
-  height: 350px;
   margin: 0 -1rem;
   background: #fff;
   border-left: none;
@@ -107,6 +106,8 @@
   overflow: hidden;
   box-shadow: none;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
   transition: opacity 0.32s ease-in-out;
 }
 
@@ -129,10 +130,15 @@
 .ad-inline-pinned .ad-media {
   display: block;
   width: 100%;
-  height: 350px;
+  height: 260px;
   object-fit: cover;
   object-position: center;
+  flex-shrink: 0;
   max-height: none;
+}
+
+.ad-inline-pinned video.ad-media {
+  height: 260px;
 }
 
 .ad-inline-popup .ad-media {
@@ -154,7 +160,7 @@
 }
 
 .ad-meta.compact {
-  padding: 10px;
+  padding: 10px 1rem;
 }
 
 .ad-meta.compact h4 {
