@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getJobs, submitApplication } from '../services/apiService';
 import JobDetailsModal from '../components/JobDetailsModal';
@@ -9,6 +9,7 @@ import './HiringPage.css';
 
 const HiringPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,20 @@ const HiringPage = () => {
   useEffect(() => {
     loadJobs();
   }, []);
+
+  // Auto-open job details if navigated from Latest Opportunities
+  useEffect(() => {
+    const incomingJobId = location.state?.selectedJobId;
+    if (incomingJobId && jobs.length > 0) {
+      const job = jobs.find(j => j.id === incomingJobId);
+      if (job) {
+        setSelectedJob(job);
+        setIsModalOpen(true);
+        // Clear state so refreshing doesn't reopen
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [jobs, location.state]);
 
   const loadJobs = async () => {
     setLoading(true);

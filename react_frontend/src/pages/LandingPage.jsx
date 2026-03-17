@@ -208,7 +208,7 @@ const LandingPage = () => {
             <div className="no-jobs">No jobs available at the moment</div>
           ) : (
             jobs.map((job) => (
-              <div key={job.id} className="job-card-landing" onClick={() => navigate('/register')}>
+              <div key={job.id} className="job-card-landing" onClick={() => navigate('/hiring', { state: { selectedJobId: job.id } })}>
                 <div className="job-card-header">
                   <h3 className="job-title">{job.title}</h3>
                   <span className={`job-type-badge ${job.jobType?.toLowerCase()}`}>
