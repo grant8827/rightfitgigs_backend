@@ -426,6 +426,7 @@ const WorkerDashboard = () => {
         job={selectedJob}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onApply={handleOpenApplyModal}
       />
 
       {showApplyModal && applyJob && (

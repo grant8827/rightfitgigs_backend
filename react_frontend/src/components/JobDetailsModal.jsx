@@ -1,7 +1,11 @@
 import '../pages/styles.css';
 
-const JobDetailsModal = ({ job, isOpen, onClose }) => {
+const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
   if (!isOpen || !job) return null;
+
+  const postedDate = job.postedDate
+    ? new Date(job.postedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -10,25 +14,56 @@ const JobDetailsModal = ({ job, isOpen, onClose }) => {
           <h2>{job.title}</h2>
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
-        
-        <div className="job-meta">
-          <span className="badge badge-company">{job.company}</span>
-          <span className="badge">{job.location}</span>
-          <span className="badge">{job.type}</span>
-        </div>
-        
-        <div className="job-salary">
-          <span className="salary-icon">💰</span>
-          <strong>Salary:</strong> {job.salary}
+
+        {/* Tags row */}
+        <div className="job-meta" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+          <span className="badge badge-company">🏢 {job.company}</span>
+          <span className="badge">📍 {job.location}</span>
+          <span className="badge">💼 {job.type}</span>
+          {job.isRemote && <span className="badge" style={{ background: '#d1fae5', color: '#065f46' }}>🌐 Remote</span>}
+          {job.isUrgentlyHiring && <span className="badge" style={{ background: '#fee2e2', color: '#991b1b' }}>🔥 Urgently Hiring</span>}
+          {job.isSeasonal && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>🍂 Seasonal</span>}
         </div>
 
+        {/* Key details grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', margin: '1rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Salary</div>
+            <div style={{ fontWeight: 600, color: '#111827' }}>💰 {job.salary || 'Not specified'}</div>
+          </div>
+          {job.industry && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Industry</div>
+              <div style={{ fontWeight: 600, color: '#111827' }}>🏭 {job.industry}</div>
+            </div>
+          )}
+          {job.experienceLevel && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Experience Level</div>
+              <div style={{ fontWeight: 600, color: '#111827' }}>📊 {job.experienceLevel}</div>
+            </div>
+          )}
+          {postedDate && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Posted</div>
+              <div style={{ fontWeight: 600, color: '#111827' }}>📅 {postedDate}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
         <div className="job-description">
           <h3>Job Description</h3>
-          <p>{job.description}</p>
+          <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
         </div>
 
-        <div className="modal-actions">
-          <button className="btn-primary btn-full" onClick={onClose}>
+        <div className="modal-actions" style={{ display: 'flex', gap: '0.75rem' }}>
+          {onApply && (
+            <button className="btn-primary btn-full" onClick={() => { onClose(); onApply(job); }}>
+              Apply Now
+            </button>
+          )}
+          <button className="btn-primary btn-full" style={{ background: '#6b7280' }} onClick={onClose}>
             Close
           </button>
         </div>
@@ -38,3 +73,4 @@ const JobDetailsModal = ({ job, isOpen, onClose }) => {
 };
 
 export default JobDetailsModal;
+

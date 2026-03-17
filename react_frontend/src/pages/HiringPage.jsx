@@ -170,7 +170,7 @@ const HiringPage = () => {
         job={selectedJob}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onApply={handleApply}
+        onApply={handleOpenApply}
       />
 
       {showApplyModal && applyJob && (
