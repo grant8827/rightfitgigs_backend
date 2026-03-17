@@ -10,7 +10,7 @@ import './AdRenderer.css';
 const POLL_INTERVAL_MS = 15000;
 const POPUP_DISMISSED_KEY = 'dismissed-popup-ads';
 const POPUP_DISPLAY_MS = 45000;
-const POPUP_GAP_MS = 8000;
+const POPUP_SLIDE_MS = 450;       // time to wait for slide-out before swapping ad
 const POPUP_DISMISSED_DELAY_MS = 60000;
 const POPUP_ALL_DISMISSED_DELAY_MS = 180000;
 
@@ -150,11 +150,11 @@ const AdRenderer = ({
   // Advance to the next popup in the cycle with a slide transition
   const advancePopup = (nextIndex) => {
     setIsPopupVisible(false);
-    // Wait for slide-out to finish, then swap ad and slide in the new one
+    // Wait for slide-out animation to finish (~380ms), then swap ad and slide in
     popupFadeRef.current = setTimeout(() => {
       setPopupIndex(nextIndex);
       requestAnimationFrame(() => requestAnimationFrame(() => setIsPopupVisible(true)));
-    }, POPUP_GAP_MS);
+    }, POPUP_SLIDE_MS);
   };
 
   // Auto-advance every POPUP_DISPLAY_MS
@@ -229,12 +229,9 @@ const AdRenderer = ({
 
     const allDismissed = popupAds.every((ad) => updatedDismissed.includes(ad.id));
 
-    // Wait 420ms for slide-out animation to finish before removing from DOM
+    // Wait for slide-out animation to finish before removing from DOM
     setTimeout(() => {
       if (allDismissed) {
-        // All popups dismissed — wait 3 minutes then restart the full cycle
-        setPopupHeld(true);
-        popupTimerRef.current = setTimeout(() => {
           const resetDismissed = [];
           setDismissedPopupIds(resetDismissed);
           sessionStorage.removeItem(POPUP_DISMISSED_KEY);
@@ -254,7 +251,7 @@ const AdRenderer = ({
           requestAnimationFrame(() => requestAnimationFrame(() => setIsPopupVisible(true)));
         }, POPUP_DISMISSED_DELAY_MS);
       }
-    }, 420);
+    }, POPUP_SLIDE_MS);
   };
 
   const handleAdClick = async (ad) => {
