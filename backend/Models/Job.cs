@@ -49,6 +49,9 @@ namespace RightFitGigs.Models
         
         public bool IsActive { get; set; } = true;
         
+        // Employer who posted this job
+        public string? EmployerId { get; set; }
+
         // Navigation properties for future features
         public string? CompanyId { get; set; }
         public virtual Company? CompanyNavigation { get; set; }

@@ -188,6 +188,24 @@ try
         {
             Console.WriteLine($"Warning: Could not fix DateTime columns: {ex.Message}");
         }
+
+        // Add EmployerId column to Jobs table if it doesn't exist
+        try
+        {
+            var addColumnCommand = connection.CreateCommand();
+            addColumnCommand.CommandText = @"
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Jobs' AND column_name = 'EmployerId') THEN
+                        ALTER TABLE ""Jobs"" ADD COLUMN ""EmployerId"" text;
+                    END IF;
+                END $$;";
+            addColumnCommand.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not add EmployerId column: {ex.Message}");
+        }
     }
 
     var testEmployerEmail = "employer.test@example.com";

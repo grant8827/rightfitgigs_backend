@@ -71,6 +71,11 @@ namespace RightFitGigs.Controllers
                     query = query.Where(j => j.IsSeasonal == request.IsSeasonal.Value);
                 }
 
+                if (!string.IsNullOrWhiteSpace(request.EmployerId))
+                {
+                    query = query.Where(j => j.EmployerId == request.EmployerId);
+                }
+
                 // Order by posted date (newest first)
                 query = query.OrderByDescending(j => j.PostedDate);
 
@@ -97,7 +102,8 @@ namespace RightFitGigs.Controllers
                     IsSeasonal = j.IsSeasonal,
                     PostedDate = j.PostedDate,
                     UpdatedDate = j.UpdatedDate,
-                    IsActive = j.IsActive
+                    IsActive = j.IsActive,
+                    EmployerId = j.EmployerId
                 }).ToList();
 
                 Response.Headers.Append("X-Total-Count", totalCount.ToString());
@@ -137,7 +143,8 @@ namespace RightFitGigs.Controllers
                     IsSeasonal = job.IsSeasonal,
                     PostedDate = job.PostedDate,
                     UpdatedDate = job.UpdatedDate,
-                    IsActive = job.IsActive
+                    IsActive = job.IsActive,
+                    EmployerId = job.EmployerId
                 };
 
                 return Ok(response);
@@ -170,7 +177,8 @@ namespace RightFitGigs.Controllers
                     ExperienceLevel = request.ExperienceLevel,
                     IsRemote = request.IsRemote,
                     IsUrgentlyHiring = request.IsUrgentlyHiring,
-                    IsSeasonal = request.IsSeasonal
+                    IsSeasonal = request.IsSeasonal,
+                    EmployerId = request.EmployerId
                 };
 
                 _context.Jobs.Add(job);
@@ -192,7 +200,8 @@ namespace RightFitGigs.Controllers
                     IsSeasonal = job.IsSeasonal,
                     PostedDate = job.PostedDate,
                     UpdatedDate = job.UpdatedDate,
-                    IsActive = job.IsActive
+                    IsActive = job.IsActive,
+                    EmployerId = job.EmployerId
                 };
 
                 return CreatedAtAction(nameof(GetJob), new { id = job.Id }, response);

@@ -77,7 +77,7 @@ const EmployerDashboard = () => {
   const loadJobs = async () => {
     setLoading(true);
     try {
-      const data = await getJobs();
+      const data = await getJobs({ employerId: user?.id });
       setJobs(data);
     } catch (error) {
       console.error('Failed to load jobs:', error);
@@ -94,6 +94,8 @@ const EmployerDashboard = () => {
       
       // Set company to user's full name
       jobData.company = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Company';
+      // Tag the job with the employer's ID
+      jobData.employerId = user?.id;
       
       if (isEditMode) {
         await updateJob(editingJobId, jobData);

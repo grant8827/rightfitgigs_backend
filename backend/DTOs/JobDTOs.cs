@@ -39,6 +39,8 @@ namespace RightFitGigs.DTOs
         public bool IsUrgentlyHiring { get; set; } = false;
         
         public bool IsSeasonal { get; set; } = false;
+
+        public string? EmployerId { get; set; }
     }
 
     public class JobResponse
@@ -58,6 +60,7 @@ namespace RightFitGigs.DTOs
         public DateTime PostedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
         public bool IsActive { get; set; }
+        public string? EmployerId { get; set; }
     }
 
     public class JobSearchRequest
@@ -70,6 +73,7 @@ namespace RightFitGigs.DTOs
         public bool? IsRemote { get; set; }
         public bool? IsUrgentlyHiring { get; set; }
         public bool? IsSeasonal { get; set; }
+        public string? EmployerId { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;
     }
