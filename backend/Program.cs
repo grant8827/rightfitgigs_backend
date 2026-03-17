@@ -54,20 +54,28 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+
+        // Also allow any localhost origin for local development
+        policy.SetIsOriginAllowedToAllowWildcardSubdomains();
+    });
+
+    // Separate policy that also allows dynamic localhost ports
+    options.AddPolicy("AllowAllWithLocalhost", policy =>
+    {
         policy.SetIsOriginAllowed(origin =>
               {
-                  // Check if the origin is in the configured list
-                  var isAllowed = allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
-
-                  // Also allow any localhost origin for local development (e.g., Flutter web)
+                  var isAllowed = allowedOrigins.Any(o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase));
                   if (!isAllowed && (origin.StartsWith("http://localhost:") || origin.StartsWith("http://127.0.0.1:")))
-                  {
                       isAllowed = true;
-                  }
                   return isAllowed;
               })
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -82,6 +90,9 @@ if (app.Environment.IsDevelopment())
 
 // Don't use HTTPS redirection - Railway handles SSL at load balancer
 // app.UseHttpsRedirection();
+
+// CORS must come before static files and routing
+app.UseCors("AllowAllWithLocalhost");
 
 app.UseStaticFiles(); // Enable static file serving
 
@@ -104,8 +115,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(resumesPath),
     RequestPath = "/uploads/resumes"
 });
-
-app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
