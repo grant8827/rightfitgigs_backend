@@ -23,9 +23,13 @@ const WorkerDashboard = () => {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [recommendedJobs, setRecommendedJobs] = useState([]);
+  const [loadingRecommended, setLoadingRecommended] = useState(false);
 
   useEffect(() => {
-    if (selectedTab === 'jobs') {
+    if (selectedTab === 'home') {
+      fetchRecommendedJobs();
+    } else if (selectedTab === 'jobs') {
       fetchJobs();
     } else if (selectedTab === 'applications') {
       fetchApplications();
@@ -34,6 +38,38 @@ const WorkerDashboard = () => {
       return () => clearInterval(interval);
     }
   }, [selectedTab]);
+
+  const fetchRecommendedJobs = async () => {
+    setLoadingRecommended(true);
+    try {
+      const data = await getJobs();
+      const activeJobs = data.filter(job => job.isActive);
+      // Score jobs by how many words from the worker's title appear in the job title
+      const workerTitle = (user?.title || '').toLowerCase();
+      const keywords = workerTitle.split(/\s+/).filter(w => w.length > 2);
+      if (keywords.length > 0) {
+        const scored = activeJobs
+          .map(job => ({
+            ...job,
+            score: keywords.filter(kw =>
+              job.title.toLowerCase().includes(kw) ||
+              (job.description || '').toLowerCase().includes(kw)
+            ).length
+          }))
+          .filter(job => job.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 6);
+        setRecommendedJobs(scored.length > 0 ? scored : activeJobs.slice(0, 6));
+      } else {
+        // No title set — show latest 6 active jobs
+        setRecommendedJobs(activeJobs.slice(0, 6));
+      }
+    } catch (err) {
+      console.error('Error fetching recommended jobs:', err);
+    } finally {
+      setLoadingRecommended(false);
+    }
+  };
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -251,21 +287,30 @@ const WorkerDashboard = () => {
 
             <div className="section">
               <h3>Recommended Jobs</h3>
+              {user?.title && (
+                <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                  Based on your title: <strong>{user.title}</strong>
+                </p>
+              )}
               <div className="jobs-list">
-                <div className="job-card">
-                  <h4>Senior Flutter Developer</h4>
-                  <p className="company">TechInnovate Inc.</p>
-                  <p className="salary">$80,000 - $100,000</p>
-                  <p className="job-type">Full-time • Remote</p>
-                  <button className="btn-apply">Apply</button>
-                </div>
-                <div className="job-card">
-                  <h4>Mobile App Developer</h4>
-                  <p className="company">Digital Solutions Ltd.</p>
-                  <p className="salary">$65,000 - $85,000</p>
-                  <p className="job-type">Full-time • Hybrid</p>
-                  <button className="btn-apply">Apply</button>
-                </div>
+                {loadingRecommended ? (
+                  <p>Loading recommendations...</p>
+                ) : recommendedJobs.length === 0 ? (
+                  <p style={{ color: '#6b7280' }}>No recommendations yet. Update your profile title to get matched jobs.</p>
+                ) : (
+                  recommendedJobs.map(job => (
+                    <div key={job.id} className="job-card">
+                      <h4>{job.title}</h4>
+                      <p className="company">{job.company}</p>
+                      <p className="salary">{job.salary}</p>
+                      <p className="job-type">{job.type}{job.isRemote ? ' • Remote' : ''}</p>
+                      <div className="job-card-actions">
+                        <button className="btn-secondary" onClick={() => { setSelectedJob(job); setIsModalOpen(true); }}>Details</button>
+                        <button className="btn-apply" onClick={() => handleOpenApplyModal(job)}>Apply</button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
