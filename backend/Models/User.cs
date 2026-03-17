@@ -61,6 +61,9 @@ namespace RightFitGigs.Models
         [StringLength(50)]
         public string? DesiredExperienceLevel { get; set; } // Entry, Mid, Senior
         
+        [StringLength(50)]
+        public string? EducationLevel { get; set; } // High School, Associate's, Bachelor's, Master's, PhD
+        
         public bool OpenToRemote { get; set; } = true;
         
         [StringLength(200)]

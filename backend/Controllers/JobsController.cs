@@ -97,6 +97,7 @@ namespace RightFitGigs.Controllers
                     Type = j.Type,
                     Industry = j.Industry,
                     ExperienceLevel = j.ExperienceLevel,
+                    EducationLevel = j.EducationLevel,
                     IsRemote = j.IsRemote,
                     IsUrgentlyHiring = j.IsUrgentlyHiring,
                     IsSeasonal = j.IsSeasonal,
@@ -138,6 +139,7 @@ namespace RightFitGigs.Controllers
                     Type = job.Type,
                     Industry = job.Industry,
                     ExperienceLevel = job.ExperienceLevel,
+                    EducationLevel = job.EducationLevel,
                     IsRemote = job.IsRemote,
                     IsUrgentlyHiring = job.IsUrgentlyHiring,
                     IsSeasonal = job.IsSeasonal,
@@ -175,6 +177,7 @@ namespace RightFitGigs.Controllers
                     Type = request.Type,
                     Industry = request.Industry,
                     ExperienceLevel = request.ExperienceLevel,
+                    EducationLevel = request.EducationLevel,
                     IsRemote = request.IsRemote,
                     IsUrgentlyHiring = request.IsUrgentlyHiring,
                     IsSeasonal = request.IsSeasonal,
@@ -195,6 +198,7 @@ namespace RightFitGigs.Controllers
                     Type = job.Type,
                     Industry = job.Industry,
                     ExperienceLevel = job.ExperienceLevel,
+                    EducationLevel = job.EducationLevel,
                     IsRemote = job.IsRemote,
                     IsUrgentlyHiring = job.IsUrgentlyHiring,
                     IsSeasonal = job.IsSeasonal,
@@ -237,6 +241,7 @@ namespace RightFitGigs.Controllers
                 job.Type = request.Type;
                 job.Industry = request.Industry;
                 job.ExperienceLevel = request.ExperienceLevel;
+                job.EducationLevel = request.EducationLevel;
                 job.IsRemote = request.IsRemote;
                 job.IsUrgentlyHiring = request.IsUrgentlyHiring;
                 job.IsSeasonal = request.IsSeasonal;

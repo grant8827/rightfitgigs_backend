@@ -37,6 +37,9 @@ namespace RightFitGigs.Models
         [StringLength(20)]
         public string? ExperienceLevel { get; set; }
         
+        [StringLength(50)]
+        public string? EducationLevel { get; set; }
+        
         public bool IsRemote { get; set; } = false;
         
         public bool IsUrgentlyHiring { get; set; } = false;

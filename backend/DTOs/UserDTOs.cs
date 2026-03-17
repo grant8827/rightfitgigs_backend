@@ -139,6 +139,7 @@ namespace RightFitGigs.DTOs
         public string? DesiredExperienceLevel { get; set; }
         public bool OpenToRemote { get; set; }
         public string? PreferredIndustries { get; set; }
+        public string? EducationLevel { get; set; }
     }
 
     public class UpdateProfileRequest
@@ -184,6 +185,9 @@ namespace RightFitGigs.DTOs
         
         [StringLength(200)]
         public string? PreferredIndustries { get; set; }
+        
+        [StringLength(50)]
+        public string? EducationLevel { get; set; }
     }
 
     public class LoginRequest

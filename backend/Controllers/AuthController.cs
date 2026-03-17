@@ -268,6 +268,9 @@ namespace RightFitGigs.Controllers
                 if (request.DesiredExperienceLevel != null)
                     user.DesiredExperienceLevel = request.DesiredExperienceLevel;
                 
+                if (request.EducationLevel != null)
+                    user.EducationLevel = request.EducationLevel;
+                
                 if (request.OpenToRemote.HasValue)
                     user.OpenToRemote = request.OpenToRemote.Value;
                 
@@ -300,7 +303,8 @@ namespace RightFitGigs.Controllers
                     DesiredJobType = user.DesiredJobType,
                     DesiredExperienceLevel = user.DesiredExperienceLevel,
                     OpenToRemote = user.OpenToRemote,
-                    PreferredIndustries = user.PreferredIndustries
+                    PreferredIndustries = user.PreferredIndustries,
+                    EducationLevel = user.EducationLevel
                 };
 
                 return Ok(response);

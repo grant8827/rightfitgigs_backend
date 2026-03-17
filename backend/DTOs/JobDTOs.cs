@@ -34,6 +34,9 @@ namespace RightFitGigs.DTOs
         [StringLength(20)]
         public string? ExperienceLevel { get; set; }
         
+        [StringLength(50)]
+        public string? EducationLevel { get; set; }
+        
         public bool IsRemote { get; set; } = false;
         
         public bool IsUrgentlyHiring { get; set; } = false;
@@ -54,6 +57,7 @@ namespace RightFitGigs.DTOs
         public string Type { get; set; } = string.Empty;
         public string? Industry { get; set; }
         public string? ExperienceLevel { get; set; }
+        public string? EducationLevel { get; set; }
         public bool IsRemote { get; set; }
         public bool IsUrgentlyHiring { get; set; }
         public bool IsSeasonal { get; set; }

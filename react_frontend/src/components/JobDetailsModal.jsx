@@ -45,6 +45,12 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
                 <div style={{ fontWeight: 600, color: '#111827' }}>📊 {job.experienceLevel}</div>
               </div>
             )}
+            {job.educationLevel && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Education Required</div>
+                <div style={{ fontWeight: 600, color: '#111827' }}>🎓 {job.educationLevel}</div>
+              </div>
+            )}
             {postedDate && (
               <div>
                 <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Posted</div>

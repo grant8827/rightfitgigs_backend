@@ -198,6 +198,42 @@ try
         {
             Console.WriteLine($"Warning: Could not add EmployerId column: {ex.Message}");
         }
+
+        // Add EducationLevel column to Jobs table if it doesn't exist
+        try
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Jobs' AND column_name = 'EducationLevel') THEN
+                        ALTER TABLE ""Jobs"" ADD COLUMN ""EducationLevel"" text;
+                    END IF;
+                END $$;";
+            cmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not add EducationLevel to Jobs: {ex.Message}");
+        }
+
+        // Add EducationLevel column to Users table if it doesn't exist
+        try
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Users' AND column_name = 'EducationLevel') THEN
+                        ALTER TABLE ""Users"" ADD COLUMN ""EducationLevel"" text;
+                    END IF;
+                END $$;";
+            cmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not add EducationLevel to Users: {ex.Message}");
+        }
     }
 
     var testEmployerEmail = "employer.test@example.com";
