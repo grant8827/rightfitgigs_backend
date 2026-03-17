@@ -1,8 +1,8 @@
 [phases.install]
-cmds = ["cd react_frontend && npm ci"]
+cmds = ["cd backend && dotnet restore"]
 
 [phases.build]
-cmds = ["cd react_frontend && npm run build"]
+cmds = ["cd backend && dotnet publish -c Release -o out"]
 
 [start]
-cmd = "npx serve react_frontend/dist -l ${PORT:-3000}"
+cmd = "dotnet backend/out/backend.dll"
