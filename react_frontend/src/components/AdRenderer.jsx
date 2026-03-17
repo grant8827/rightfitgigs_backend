@@ -117,20 +117,6 @@ const AdRenderer = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Clean up popup timers on unmount
-  useEffect(() => {
-    return () => clearPopupTimers();
-  }, []);
-
-  // Slide the popup in on first appearance
-  useEffect(() => {
-    if (!popupAd || popupMountedRef.current) return;
-    popupMountedRef.current = true;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setIsPopupVisible(true));
-    });
-  }, [popupAd]);
-
   const popupAds = useMemo(
     () => ads.filter((ad) => ad.placement === 'Popup'),
     [ads]
@@ -146,6 +132,20 @@ const AdRenderer = ({
     clearTimeout(popupTimerRef.current);
     clearTimeout(popupFadeRef.current);
   };
+
+  // Clean up popup timers on unmount
+  useEffect(() => {
+    return () => clearPopupTimers();
+  }, []);
+
+  // Slide the popup in on first appearance
+  useEffect(() => {
+    if (!popupAd || popupMountedRef.current) return;
+    popupMountedRef.current = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setIsPopupVisible(true));
+    });
+  }, [popupAd]);
 
   // Advance to the next popup in the cycle with a slide transition
   const advancePopup = (nextIndex) => {
