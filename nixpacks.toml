@@ -1,8 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
 [phases.install]
-cmds = ["cd backend && dotnet restore"]
+cmds = ["cd react_frontend && npm install"]
 
 [phases.build]
-cmds = ["cd backend && dotnet publish -c Release -o out"]
+cmds = ["cd react_frontend && npm run build"]
 
 [start]
-cmd = "dotnet backend/out/backend.dll"
+cmd = "cd react_frontend && ./node_modules/.bin/serve -s dist --listen tcp://0.0.0.0:$PORT"

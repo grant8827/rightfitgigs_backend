@@ -26,7 +26,7 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
         </div>
 
         {/* Key details grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', margin: '1rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', margin: '0.75rem 0', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px' }}>
           <div>
             <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Salary</div>
             <div style={{ fontWeight: 600, color: '#111827' }}>💰 {job.salary || 'Not specified'}</div>
