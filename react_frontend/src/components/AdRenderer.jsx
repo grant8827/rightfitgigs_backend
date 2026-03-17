@@ -232,6 +232,9 @@ const AdRenderer = ({
     // Wait for slide-out animation to finish before removing from DOM
     setTimeout(() => {
       if (allDismissed) {
+        // All popups dismissed — wait 3 minutes then restart the full cycle
+        setPopupHeld(true);
+        popupTimerRef.current = setTimeout(() => {
           const resetDismissed = [];
           setDismissedPopupIds(resetDismissed);
           sessionStorage.removeItem(POPUP_DISMISSED_KEY);
