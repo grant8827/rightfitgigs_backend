@@ -65,11 +65,12 @@ const AdRenderer = ({
     return raw ? JSON.parse(raw) : [];
   });
   const [popupIndex, setPopupIndex] = useState(0);
-  const [isPopupVisible, setIsPopupVisible] = useState(true);
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupHeld, setPopupHeld] = useState(false);
   const viewedRef = useRef(new Set());
   const popupTimerRef = useRef(null);
   const popupFadeRef = useRef(null);
+  const popupMountedRef = useRef(false);
 
   const pinnedFadeAds = useMemo(() => {
     if (pinnedMode === 'inline' && inlineSlot) {
@@ -121,6 +122,15 @@ const AdRenderer = ({
     return () => clearPopupTimers();
   }, []);
 
+  // Slide the popup in on first appearance
+  useEffect(() => {
+    if (!popupAd || popupMountedRef.current) return;
+    popupMountedRef.current = true;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setIsPopupVisible(true));
+    });
+  }, [popupAd]);
+
   const popupAds = useMemo(
     () => ads.filter((ad) => ad.placement === 'Popup'),
     [ads]
@@ -137,13 +147,13 @@ const AdRenderer = ({
     clearTimeout(popupFadeRef.current);
   };
 
-  // Advance to the next popup in the cycle with a fade transition
+  // Advance to the next popup in the cycle with a slide transition
   const advancePopup = (nextIndex) => {
     setIsPopupVisible(false);
-    // Stay hidden for POPUP_GAP_MS, then show the next popup
+    // Wait for slide-out to finish, then swap ad and slide in the new one
     popupFadeRef.current = setTimeout(() => {
       setPopupIndex(nextIndex);
-      setIsPopupVisible(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setIsPopupVisible(true)));
     }, POPUP_GAP_MS);
   };
 
@@ -211,7 +221,7 @@ const AdRenderer = ({
   const dismissPopup = (adId) => {
     if (!adId) return;
     clearPopupTimers();
-    setIsPopupVisible(false);
+    setIsPopupVisible(false); // slide out first
 
     const updatedDismissed = [...dismissedPopupIds, adId];
     setDismissedPopupIds(updatedDismissed);
@@ -219,29 +229,32 @@ const AdRenderer = ({
 
     const allDismissed = popupAds.every((ad) => updatedDismissed.includes(ad.id));
 
-    if (allDismissed) {
-      // All popups dismissed — wait 3 minutes then restart the full cycle
-      setPopupHeld(true);
-      popupTimerRef.current = setTimeout(() => {
-        const resetDismissed = [];
-        setDismissedPopupIds(resetDismissed);
-        sessionStorage.removeItem(POPUP_DISMISSED_KEY);
-        setPopupIndex(0);
-        setPopupHeld(false);
-        setIsPopupVisible(true);
-      }, POPUP_ALL_DISMISSED_DELAY_MS);
-    } else {
-      // Some remain — wait 1 minute then show next undismissed
-      setPopupHeld(true);
-      popupTimerRef.current = setTimeout(() => {
-        const nextAd = popupAds.find((ad) => !updatedDismissed.includes(ad.id));
-        if (nextAd) {
-          setPopupIndex(popupAds.indexOf(nextAd));
-        }
-        setPopupHeld(false);
-        setIsPopupVisible(true);
-      }, POPUP_DISMISSED_DELAY_MS);
-    }
+    // Wait 420ms for slide-out animation to finish before removing from DOM
+    setTimeout(() => {
+      if (allDismissed) {
+        // All popups dismissed — wait 3 minutes then restart the full cycle
+        setPopupHeld(true);
+        popupTimerRef.current = setTimeout(() => {
+          const resetDismissed = [];
+          setDismissedPopupIds(resetDismissed);
+          sessionStorage.removeItem(POPUP_DISMISSED_KEY);
+          setPopupIndex(0);
+          setPopupHeld(false);
+          requestAnimationFrame(() => requestAnimationFrame(() => setIsPopupVisible(true)));
+        }, POPUP_ALL_DISMISSED_DELAY_MS);
+      } else {
+        // Some remain — wait 1 minute then show next undismissed
+        setPopupHeld(true);
+        popupTimerRef.current = setTimeout(() => {
+          const nextAd = popupAds.find((ad) => !updatedDismissed.includes(ad.id));
+          if (nextAd) {
+            setPopupIndex(popupAds.indexOf(nextAd));
+          }
+          setPopupHeld(false);
+          requestAnimationFrame(() => requestAnimationFrame(() => setIsPopupVisible(true)));
+        }, POPUP_DISMISSED_DELAY_MS);
+      }
+    }, 420);
   };
 
   const handleAdClick = async (ad) => {

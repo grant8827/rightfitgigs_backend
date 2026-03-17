@@ -7,11 +7,20 @@
   position: fixed;
   line-height: 0;
   z-index: 1200;
-  transition: opacity 0.32s ease-in-out;
+  transition: opacity 0.38s ease, transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.ad-popup-card.is-visible { opacity: 1; }
-.ad-popup-card.is-hidden  { opacity: 0; pointer-events: none; }
+/* Slide from left (TopLeft, BottomLeft) */
+.ad-popup-card.popup-slide-from-left.is-visible  { opacity: 1; transform: translateX(0); }
+.ad-popup-card.popup-slide-from-left.is-hidden   { opacity: 0; transform: translateX(-70px); pointer-events: none; }
+
+/* Slide from right (TopRight, BottomRight) */
+.ad-popup-card.popup-slide-from-right.is-visible { opacity: 1; transform: translateX(0); }
+.ad-popup-card.popup-slide-from-right.is-hidden  { opacity: 0; transform: translateX(70px); pointer-events: none; }
+
+/* Slide from bottom (Center) */
+.ad-popup-card.popup-slide-from-bottom.is-visible { opacity: 1; transform: translate(-50%, -50%); }
+.ad-popup-card.popup-slide-from-bottom.is-hidden  { opacity: 0; transform: translate(-50%, calc(-50% + 50px)); pointer-events: none; }
 
 .ad-close-btn {
   position: absolute;
@@ -52,18 +61,6 @@
   font-weight: 600;
 }
 
-.popup-slide-from-left {
-  animation: popupSlideFromLeft 0.35s ease-out;
-}
-
-.popup-slide-from-right {
-  animation: popupSlideFromRight 0.35s ease-out;
-}
-
-.popup-slide-from-bottom {
-  animation: popupSlideFromBottom 0.35s ease-out;
-}
-
 .ad-meta {
   padding: 12px;
   line-height: 1.4;
@@ -91,7 +88,7 @@
   box-shadow: 0 12px 35px rgba(2, 6, 23, 0.2);
   z-index: 1100;
   cursor: pointer;
-  transition: opacity 0.32s ease-in-out;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ad-inline-pinned {
@@ -106,7 +103,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  transition: opacity 0.32s ease-in-out;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ad-inline-popup {
@@ -208,35 +205,4 @@
   }
 }
 
-@keyframes popupSlideFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
 
-@keyframes popupSlideFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes popupSlideFromBottom {
-  from {
-    opacity: 0;
-    transform: translate(-50%, calc(-50% + 20px));
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-}
