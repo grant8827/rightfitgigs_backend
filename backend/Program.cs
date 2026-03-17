@@ -50,32 +50,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 // Add CORS
+var corsOrigins = allowedOrigins;
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.WithOrigins(corsOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials();
-
-        // Also allow any localhost origin for local development
-        policy.SetIsOriginAllowedToAllowWildcardSubdomains();
-    });
-
-    // Separate policy that also allows dynamic localhost ports
-    options.AddPolicy("AllowAllWithLocalhost", policy =>
-    {
-        policy.SetIsOriginAllowed(origin =>
-              {
-                  var isAllowed = allowedOrigins.Any(o => string.Equals(o, origin, StringComparison.OrdinalIgnoreCase));
-                  if (!isAllowed && (origin.StartsWith("http://localhost:") || origin.StartsWith("http://127.0.0.1:")))
-                      isAllowed = true;
-                  return isAllowed;
-              })
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+              .WithExposedHeaders("X-Total-Count");
     });
 });
 
@@ -92,7 +75,7 @@ if (app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 
 // CORS must come before static files and routing
-app.UseCors("AllowAllWithLocalhost");
+app.UseCors("AllowAll");
 
 app.UseStaticFiles(); // Enable static file serving
 
