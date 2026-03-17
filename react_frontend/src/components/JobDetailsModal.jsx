@@ -15,49 +15,53 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
 
-        {/* Tags row */}
-        <div className="job-meta" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span className="badge badge-company">🏢 {job.company}</span>
-          <span className="badge">📍 {job.location}</span>
-          <span className="badge">💼 {job.type}</span>
-          {job.isRemote && <span className="badge" style={{ background: '#d1fae5', color: '#065f46' }}>🌐 Remote</span>}
-          {job.isUrgentlyHiring && <span className="badge" style={{ background: '#fee2e2', color: '#991b1b' }}>🔥 Urgently Hiring</span>}
-          {job.isSeasonal && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>🍂 Seasonal</span>}
-        </div>
-
-        {/* Key details grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', margin: '0.75rem 0', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px' }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Salary</div>
-            <div style={{ fontWeight: 600, color: '#111827' }}>💰 {job.salary || 'Not specified'}</div>
+        {/* Single scrollable body */}
+        <div className="modal-body">
+          {/* Tags row */}
+          <div className="job-meta" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+            <span className="badge badge-company">🏢 {job.company}</span>
+            <span className="badge">📍 {job.location}</span>
+            <span className="badge">💼 {job.type}</span>
+            {job.isRemote && <span className="badge" style={{ background: '#d1fae5', color: '#065f46' }}>🌐 Remote</span>}
+            {job.isUrgentlyHiring && <span className="badge" style={{ background: '#fee2e2', color: '#991b1b' }}>🔥 Urgently Hiring</span>}
+            {job.isSeasonal && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>🍂 Seasonal</span>}
           </div>
-          {job.industry && (
+
+          {/* Key details grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', margin: '0.75rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Industry</div>
-              <div style={{ fontWeight: 600, color: '#111827' }}>🏭 {job.industry}</div>
+              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Salary</div>
+              <div style={{ fontWeight: 600, color: '#111827' }}>💰 {job.salary || 'Not specified'}</div>
             </div>
-          )}
-          {job.experienceLevel && (
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Experience Level</div>
-              <div style={{ fontWeight: 600, color: '#111827' }}>📊 {job.experienceLevel}</div>
-            </div>
-          )}
-          {postedDate && (
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Posted</div>
-              <div style={{ fontWeight: 600, color: '#111827' }}>📅 {postedDate}</div>
-            </div>
-          )}
+            {job.industry && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Industry</div>
+                <div style={{ fontWeight: 600, color: '#111827' }}>🏭 {job.industry}</div>
+              </div>
+            )}
+            {job.experienceLevel && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Experience Level</div>
+                <div style={{ fontWeight: 600, color: '#111827' }}>📊 {job.experienceLevel}</div>
+              </div>
+            )}
+            {postedDate && (
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Posted</div>
+                <div style={{ fontWeight: 600, color: '#111827' }}>📅 {postedDate}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="job-description">
+            <h3>Job Description</h3>
+            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
+          </div>
         </div>
 
-        {/* Description */}
-        <div className="job-description">
-          <h3>Job Description</h3>
-          <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
-        </div>
-
-        <div className="modal-actions" style={{ display: 'flex', gap: '0.75rem' }}>
+        {/* Sticky footer buttons */}
+        <div className="modal-footer" style={{ display: 'flex', gap: '0.75rem' }}>
           {onApply && (
             <button className="btn-primary btn-full" onClick={() => { onClose(); onApply(job); }}>
               Apply Now
