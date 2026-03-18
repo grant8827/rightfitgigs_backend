@@ -309,10 +309,10 @@ const AdRenderer = ({
           ) : null}
           <div className="ad-content" onClick={() => handleAdClick(popupAd)}>
             {renderMedia(popupAd, 'ad-media')}
-            {(popupAd.description || popupAd.businessName) ? (
+            {popupAd.description ? (
               <div className="ad-meta">
                 <h4>{popupAd.title}</h4>
-                <p>{popupAd.description || popupAd.businessName}</p>
+                <p>{popupAd.description}</p>
               </div>
             ) : null}
           </div>
@@ -333,7 +333,7 @@ const AdRenderer = ({
           }}
         >
           {renderMedia(pinnedFadeAd, 'ad-media')}
-          {(pinnedFadeAd.description || pinnedFadeAd.businessName) ? (
+          {pinnedFadeAd.description ? (
             <div className="ad-meta compact">
               <h4>{pinnedFadeAd.title}</h4>
             </div>
@@ -355,10 +355,10 @@ const AdRenderer = ({
           }}
         >
           {renderMedia(pinnedFadeAd, 'ad-media')}
-          {(pinnedFadeAd.description || pinnedFadeAd.businessName) ? (
+          {pinnedFadeAd.description ? (
             <div className="ad-meta compact">
               <h4>{pinnedFadeAd.title}</h4>
-              <p>{pinnedFadeAd.description || pinnedFadeAd.businessName}</p>
+              <p>{pinnedFadeAd.description}</p>
             </div>
           ) : null}
         </section>
@@ -382,10 +382,10 @@ const AdRenderer = ({
           ) : null}
           <div className="ad-content" onClick={() => handleAdClick(popupAd)}>
             {renderMedia(popupAd, 'ad-media')}
-            {(popupAd.description || popupAd.businessName) ? (
+            {popupAd.description ? (
               <div className="ad-meta compact">
                 <h4>{popupAd.title}</h4>
-                <p>{popupAd.description || popupAd.businessName}</p>
+                <p>{popupAd.description}</p>
               </div>
             ) : null}
           </div>
