@@ -1002,3 +1002,22 @@
     align-items: flex-start;
   }
 }
+
+/* Home page inline ad sizing — independent from sidebar ads */
+.home-inline-ad {
+  width: 100%;
+  max-width: 600px;
+  overflow: hidden;
+}
+
+.home-inline-ad .ad-inline-pinned {
+  height: 250px;
+  max-height: 250px;
+  max-width: 600px;
+}
+
+.home-inline-ad .ad-inline-pinned .ad-media,
+.home-inline-ad .ad-inline-pinned video.ad-media {
+  height: 250px;
+  max-height: 250px;
+}

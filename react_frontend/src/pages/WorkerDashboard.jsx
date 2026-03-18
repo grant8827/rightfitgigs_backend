@@ -182,6 +182,7 @@ const WorkerDashboard = () => {
 
   return (
     <div className="worker-dashboard">
+      <AdRenderer showPopup={true} showPinned={false} />
       <header className="dashboard-header">
         <h1>Welcome, {user?.firstName}</h1>
         <div className="user-menu">
@@ -418,7 +419,7 @@ const WorkerDashboard = () => {
           </div>
         </main>
         <aside className="dashboard-sidebar-right">
-          <AdRenderer showPopup={true} showPinned={true} pinnedMode="inline" inlineSlot="SidebarRight" />
+          <AdRenderer showPopup={false} showPinned={true} pinnedMode="inline" inlineSlot="SidebarRight" />
         </aside>
       </div>
 

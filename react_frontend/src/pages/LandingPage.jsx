@@ -83,7 +83,9 @@ const LandingPage = () => {
             </div>
           </div>
 
-            <AdRenderer pinnedMode="inline" inlineSlot="HomeBelowHeader" />
+            <div className="home-inline-ad">
+              <AdRenderer showPopup={false} pinnedMode="inline" inlineSlot="HomeBelowHeader" />
+            </div>
         </div>
         
         {/* Animated Background Elements */}
@@ -196,7 +198,9 @@ const LandingPage = () => {
 
       {/* Latest Jobs Section */}
       <section className="latest-jobs">
-        <AdRenderer showPopup={false} pinnedMode="inline" inlineSlot="HomeLatestAboveJobs" />
+        <div className="home-inline-ad">
+          <AdRenderer showPopup={false} pinnedMode="inline" inlineSlot="HomeLatestAboveJobs" />
+        </div>
         <div className="section-header">
           <h2>Latest Opportunities</h2>
           <p>Explore the newest job openings from top companies</p>

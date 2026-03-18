@@ -10,7 +10,7 @@ import './AdRenderer.css';
 const POLL_INTERVAL_MS = 15000;
 const POPUP_DISMISSED_KEY = 'dismissed-popup-ads';
 const POPUP_DISPLAY_MS = 45000;
-const POPUP_SLIDE_MS = 450;       // time to wait for slide-out before swapping ad
+const POPUP_SLIDE_MS = 1300;      // time to wait for slide-out before swapping ad
 const POPUP_DISMISSED_DELAY_MS = 60000;
 const POPUP_ALL_DISMISSED_DELAY_MS = 180000;
 
@@ -181,7 +181,7 @@ const AdRenderer = ({
     }
 
     const displayDurationMs = Math.max(2, pinnedFadeAd.fadeDurationSeconds || 8) * 1000;
-    const fadeDurationMs = 320;
+    const fadeDurationMs = 1200; // matches the 1.1s CSS opacity transition
 
     const switchTimer = setTimeout(() => {
       setIsPinnedVisible(false);
