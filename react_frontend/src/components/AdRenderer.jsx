@@ -188,7 +188,7 @@ const AdRenderer = ({
 
       setTimeout(() => {
         setPinnedIndex((prev) => (prev + 1) % pinnedFadeAds.length);
-        setIsPinnedVisible(true);
+        requestAnimationFrame(() => requestAnimationFrame(() => setIsPinnedVisible(true)));
       }, fadeDurationMs);
     }, displayDurationMs);
 
