@@ -1,10 +1,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY react_frontend/package.json react_frontend/package-lock.json ./
 RUN npm install
 
-COPY . .
+COPY react_frontend/ .
 RUN npm run build
 
 FROM node:20-alpine AS runtime
