@@ -150,7 +150,7 @@ const HiringPage = () => {
                       className="btn-secondary" 
                       onClick={() => handleJobDetails(job)}
                     >
-                      Details
+                      View Details
                     </button>
                     <button 
                       className="btn-primary" 
