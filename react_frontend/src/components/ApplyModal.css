@@ -200,6 +200,60 @@
   color: #78350f;
 }
 
+/* Resume upload (no existing resume) */
+.apply-resume-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.apply-resume-upload-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.apply-resume-file-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.6rem 1rem;
+  border: 2px dashed #a5b4fc;
+  border-radius: 8px;
+  background: #eef2ff;
+  transition: border-color 0.2s, background 0.2s;
+  align-self: flex-start;
+}
+
+.apply-resume-file-picker:hover {
+  border-color: #667eea;
+  background: #e0e7ff;
+}
+
+.apply-resume-pick-btn {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4338ca;
+}
+
+.apply-resume-file-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #15803d;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apply-resume-change-link {
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-decoration: underline;
+  flex-shrink: 0;
+}
+
 /* Cover letter */
 .apply-cover-letter {
   width: 100%;

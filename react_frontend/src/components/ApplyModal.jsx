@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getFileUrl } from '../services/apiService';
+import { getFileUrl, uploadResumeFile } from '../services/apiService';
 import './ApplyModal.css';
 
 const ApplyModal = ({ job, onClose, onSubmit }) => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [coverLetter, setCoverLetter] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [resumeFile, setResumeFile] = useState(null);
 
   if (!job) return null;
 
@@ -19,9 +20,17 @@ const ApplyModal = ({ job, onClose, onSubmit }) => {
       setError('Please write a cover letter before applying.');
       return;
     }
+    if (!hasResume && !resumeFile) {
+      setError('Please upload your resume before applying.');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
+      if (!hasResume && resumeFile) {
+        const updatedUser = await uploadResumeFile(user.id, resumeFile);
+        updateUser({ resumeUrl: updatedUser.resumeUrl });
+      }
       await onSubmit(job.id, coverLetter.trim());
       onClose();
     } catch (err) {
@@ -90,14 +99,30 @@ const ApplyModal = ({ job, onClose, onSubmit }) => {
                 </div>
               </div>
             ) : (
-              <div className="apply-resume-missing">
-                <span>⚠️</span>
-                <div>
-                  <div className="apply-resume-warning-title">No resume on file</div>
-                  <div className="apply-resume-warning-text">
-                    Go to <strong>Profile → Resume</strong> tab to upload your resume. Employers are less likely to hire without one.
-                  </div>
-                </div>
+              <div className="apply-resume-upload">
+                <p className="apply-resume-upload-hint">
+                  Upload your resume — it will be saved to your profile and sent with this application.
+                </p>
+                <label className="apply-resume-file-picker">
+                  {resumeFile ? (
+                    <>
+                      <span className="apply-resume-check">✅</span>
+                      <span className="apply-resume-file-name">{resumeFile.name}</span>
+                      <span className="apply-resume-change-link">Change</span>
+                    </>
+                  ) : (
+                    <span className="apply-resume-pick-btn">📎 Choose File (.pdf, .doc, .docx)</span>
+                  )}
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      setResumeFile(e.target.files[0] || null);
+                      setError('');
+                    }}
+                  />
+                </label>
               </div>
             )}
           </div>
@@ -125,7 +150,9 @@ const ApplyModal = ({ job, onClose, onSubmit }) => {
               Cancel
             </button>
             <button type="submit" className="apply-btn-submit" disabled={submitting}>
-              {submitting ? 'Submitting...' : '🚀 Submit Application'}
+              {submitting
+                ? (!hasResume && resumeFile ? 'Uploading & Submitting...' : 'Submitting...')
+                : '🚀 Submit Application'}
             </button>
           </div>
         </form>
