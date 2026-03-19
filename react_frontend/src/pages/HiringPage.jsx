@@ -14,6 +14,8 @@ const HiringPage = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [jobTypeFilter, setJobTypeFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [applyJob, setApplyJob] = useState(null);
@@ -49,11 +51,23 @@ const HiringPage = () => {
     }
   };
 
-  const filteredJobs = jobs.filter(job =>
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredJobs = jobs.filter(job => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = !term ||
+      job.title.toLowerCase().includes(term) ||
+      job.description.toLowerCase().includes(term) ||
+      job.location.toLowerCase().includes(term);
+    const matchesType = !jobTypeFilter ||
+      (job.jobType || '').toLowerCase() === jobTypeFilter.toLowerCase();
+    const matchesLocation = !locationFilter ||
+      (job.location || '').toLowerCase().includes(locationFilter.toLowerCase());
+    return matchesSearch && matchesType && matchesLocation;
+  });
+
+  const jobTypes = [...new Set(jobs.map(j => j.jobType).filter(Boolean))];
+  const locations = [...new Set(jobs.map(j => j.location).filter(Boolean))].sort();
+  const hasFilters = searchTerm || jobTypeFilter || locationFilter;
+  const clearFilters = () => { setSearchTerm(''); setJobTypeFilter(''); setLocationFilter(''); };
 
   const jobsPerAdInsertion = 4;
   const jobsWithAds = filteredJobs.reduce((items, job, index) => {
@@ -101,13 +115,57 @@ const HiringPage = () => {
       </div>
 
       <div className="search-section">
-        <input
-          type="text"
-          placeholder="Search jobs by title, description, or location..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
+        <div className="search-bar-row">
+          <div className="search-input-wrap">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Job title, keyword, or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button className="search-clear-btn" onClick={() => setSearchTerm('')}>✕</button>
+            )}
+          </div>
+          <select
+            className="search-location-select"
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+          >
+            <option value="">📍 All Locations</option>
+            {locations.map(loc => (
+              <option key={loc} value={loc}>{loc}</option>
+            ))}
+          </select>
+        </div>
+
+        {jobTypes.length > 0 && (
+          <div className="search-filter-chips">
+            <span className="chips-label">Type:</span>
+            <button
+              className={`chip${!jobTypeFilter ? ' chip-active' : ''}`}
+              onClick={() => setJobTypeFilter('')}
+            >All</button>
+            {jobTypes.map(type => (
+              <button
+                key={type}
+                className={`chip${jobTypeFilter === type ? ' chip-active' : ''}`}
+                onClick={() => setJobTypeFilter(jobTypeFilter === type ? '' : type)}
+              >{type}</button>
+            ))}
+          </div>
+        )}
+
+        <div className="search-results-row">
+          <span className="search-results-count">
+            {loading ? '' : `${filteredJobs.length} job${filteredJobs.length !== 1 ? 's' : ''} found`}
+          </span>
+          {hasFilters && (
+            <button className="clear-filters-btn" onClick={clearFilters}>✕ Clear filters</button>
+          )}
+        </div>
       </div>
 
       <AdRenderer showPopup={false} pinnedMode="inline" inlineSlot="JobsBelowSearch" />
