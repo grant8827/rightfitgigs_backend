@@ -1,6 +1,6 @@
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
 }
 
 .register-selection-container {
@@ -50,7 +50,7 @@
   left: 0;
   right: 0;
   height: 5px;
-  background: linear-gradient(to right, #667eea, #764ba2);
+  background: linear-gradient(to right, #4f46e5, #14b8a6);
   transform: scaleX(0);
   transition: transform 0.4s ease;
 }
@@ -67,7 +67,7 @@
 .card-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -120,7 +120,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
 }
 

@@ -42,7 +42,7 @@
 
 .apply-job-subtitle {
   margin: 0;
-  color: #667eea;
+  color: #4f46e5;
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -104,7 +104,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -227,7 +227,7 @@
 }
 
 .apply-resume-file-picker:hover {
-  border-color: #667eea;
+  border-color: #4f46e5;
   background: #e0e7ff;
 }
 
@@ -270,8 +270,8 @@
 
 .apply-cover-letter:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .apply-char-count {
@@ -316,7 +316,7 @@
 
 .apply-btn-submit {
   padding: 0.7rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 6px;

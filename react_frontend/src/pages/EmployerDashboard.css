@@ -38,7 +38,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -111,14 +111,14 @@
 }
 
 .sidebar-nav button.active {
-  color: #667eea;
-  border-left-color: #667eea;
+  color: #4f46e5;
+  border-left-color: #4f46e5;
   background: #f0f2ff;
   font-weight: 600;
 }
 
 .sidebar-nav button:hover:not(.active) {
-  color: #667eea;
+  color: #4f46e5;
   background: #f5f6ff;
 }
 
@@ -237,7 +237,7 @@
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #667eea;
+  color: #4f46e5;
   margin: 0.5rem 0;
 }
 
@@ -270,7 +270,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -373,7 +373,7 @@
 
 .btn-add-job {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 4px;
@@ -474,7 +474,7 @@
   color: #333;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #4f46e5;
 }
 
 .checkbox-group {
@@ -541,7 +541,7 @@
 
 .btn-submit {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 4px;
@@ -589,7 +589,7 @@
 
 .btn-post-first {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 4px;
@@ -672,7 +672,7 @@
 }
 
 .btn-view {
-  background: #667eea;
+  background: #4f46e5;
   color: white;
 }
 
@@ -842,7 +842,7 @@
 }
 
 .detail-row a {
-  color: #667eea;
+  color: #4f46e5;
   text-decoration: none;
 }
 
@@ -1259,7 +1259,7 @@
   width: 64px;
   height: 64px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   display: flex;
   align-items: center;
   justify-content: center;

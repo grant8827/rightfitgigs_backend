@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   overflow: hidden;
   padding: 60px 2rem 1rem 2rem;
 }
@@ -22,8 +22,8 @@
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.3) 0%, transparent 50%);
+    radial-gradient(circle at 20% 50%, rgba(79, 70, 229, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(20, 184, 166, 0.3) 0%, transparent 50%);
 }
 
 .hero-content {
@@ -84,7 +84,7 @@
   gap: 0.5rem;
   padding: 1rem 2.5rem;
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   border: none;
   border-radius: 50px;
   font-size: 1.1rem;
@@ -124,7 +124,7 @@
 
 .btn-hero-secondary:hover {
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   transform: translateY(-3px);
 }
 
@@ -241,7 +241,7 @@
 .stat-number {
   font-size: 3rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -283,7 +283,7 @@
 .section-badge {
   display: inline-block;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border-radius: 50px;
   font-size: 0.85rem;
@@ -321,7 +321,7 @@
 .check-icon {
   width: 30px;
   height: 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -346,7 +346,7 @@
 
 .btn-section {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 50px;
@@ -354,12 +354,12 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px rgba(79, 70, 229, 0.4);
 }
 
 .btn-section:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 8px 30px rgba(79, 70, 229, 0.5);
 }
 
 /* Visual Cards */
@@ -411,7 +411,7 @@
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -472,7 +472,7 @@
 .stat-mini-value {
   font-size: 2.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -537,7 +537,7 @@
 .step-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -553,13 +553,13 @@
   width: 35px;
   height: 35px;
   background: white;
-  border: 3px solid #667eea;
+  border: 3px solid #4f46e5;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #667eea;
+  color: #4f46e5;
 }
 
 .step-card h3 {
@@ -576,7 +576,7 @@
 .step-connector {
   width: 60px;
   height: 3px;
-  background: linear-gradient(to right, #667eea, #764ba2);
+  background: linear-gradient(to right, #4f46e5, #14b8a6);
   margin-top: 80px;
   border-radius: 2px;
 }
@@ -585,7 +585,7 @@
 .cta {
   position: relative;
   padding: 6rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   text-align: center;
   overflow: hidden;
 }
@@ -620,7 +620,7 @@
 .btn-cta-primary {
   padding: 1rem 2.5rem;
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   border: none;
   border-radius: 50px;
   font-size: 1.1rem;
@@ -649,7 +649,7 @@
 
 .btn-cta-secondary:hover {
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   transform: translateY(-3px);
 }
 
@@ -715,7 +715,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #4f46e5 0%, #14b8a6 100%);
   transform: scaleX(0);
   transition: transform 0.3s ease;
 }
@@ -726,8 +726,8 @@
 
 .job-card-landing:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
-  border-color: #667eea;
+  box-shadow: 0 12px 40px rgba(79, 70, 229, 0.2);
+  border-color: #4f46e5;
 }
 
 .job-card-header {
@@ -823,14 +823,14 @@
 }
 
 .view-details {
-  color: #667eea;
+  color: #4f46e5;
   font-weight: 600;
   font-size: 0.9rem;
   transition: color 0.3s ease;
 }
 
 .job-card-landing:hover .view-details {
-  color: #764ba2;
+  color: #14b8a6;
 }
 
 .loading-jobs,
@@ -851,7 +851,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 2.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 50px;
@@ -859,12 +859,12 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
 }
 
 .btn-primary-landing:hover {
   transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 15px 40px rgba(79, 70, 229, 0.4);
 }
 
 /* Footer */
@@ -886,7 +886,7 @@
 .footer-section h4 {
   font-size: 1.3rem;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -894,7 +894,7 @@
 
 .footer-section h5 {
   margin-bottom: 1rem;
-  color: #667eea;
+  color: #4f46e5;
 }
 
 .footer-section p {
@@ -911,7 +911,7 @@
 }
 
 .footer-section a:hover {
-  color: #667eea;
+  color: #4f46e5;
 }
 
 .footer-bottom {

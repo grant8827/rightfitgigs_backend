@@ -1,4 +1,17 @@
-* {
+:root {
+  /* === NEW BRAND: Modern Growth === */
+  --brand-indigo: #4f46e5;
+  --brand-teal: #14b8a6;
+  --brand-dark-indigo: #312e81;
+  --brand-gradient: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
+
+  /* === LEGACY PURPLE (preserved) === */
+  --brand-purple: #667eea;
+  --brand-purple-dark: #764ba2;
+  --brand-purple-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+*  {
   margin: 0;
   padding: 0;
   box-sizing: border-box;

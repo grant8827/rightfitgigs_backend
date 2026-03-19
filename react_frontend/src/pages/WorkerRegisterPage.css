@@ -15,7 +15,7 @@
 
 /* Left Side - Info Section */
 .register-info {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   padding: 4rem;
   display: flex;
@@ -181,8 +181,8 @@
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 .form-group textarea {
@@ -200,7 +200,7 @@
 .btn-worker-register {
   width: 100%;
   padding: 1.2rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 50px;
@@ -217,7 +217,7 @@
 
 .btn-worker-register:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.4);
 }
 
 .btn-worker-register:disabled {
@@ -251,7 +251,7 @@
 }
 
 .form-footer a {
-  color: #667eea;
+  color: #4f46e5;
   text-decoration: none;
   font-weight: 700;
   transition: opacity 0.3s ease;

@@ -1026,7 +1026,7 @@ const EmployerDashboard = () => {
                 <div>
                   <h3 style={{margin:0}}>{selectedApplicant.workerName}</h3>
                   {selectedApplicant.workerTitle && (
-                    <p style={{margin:'2px 0 0',fontSize:'0.9rem',color:'#667eea',fontWeight:500}}>{selectedApplicant.workerTitle}</p>
+                    <p style={{margin:'2px 0 0',fontSize:'0.9rem',color:'#4f46e5',fontWeight:500}}>{selectedApplicant.workerTitle}</p>
                   )}
                 </div>
               </div>

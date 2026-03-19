@@ -1,6 +1,6 @@
 .hiring-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   padding: 2rem;
 }
 
@@ -138,7 +138,7 @@
 
 .chip-active {
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   border-color: white;
 }
 
@@ -264,7 +264,7 @@
 }
 
 .job-item .company {
-  color: #667eea;
+  color: #4f46e5;
   font-weight: 600;
   margin: 0 0 1rem 0;
 }
@@ -298,8 +298,8 @@
   flex: 1;
   padding: 0.75rem;
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #4f46e5;
+  border: 2px solid #4f46e5;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
@@ -312,7 +312,7 @@
 .btn-primary {
   flex: 1;
   padding: 0.75rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -351,7 +351,7 @@
 .btn-apply {
   width: 100%;
   padding: 0.75rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 6px;
@@ -389,7 +389,7 @@
 
 .toggle-btn.active {
   background: white;
-  color: #667eea;
+  color: #4f46e5;
   border-color: white;
 }
 
@@ -429,7 +429,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -471,7 +471,7 @@
 .btn-view-more {
   width: 100%;
   padding: 0.75rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -513,7 +513,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -553,7 +553,7 @@
 .btn-contact {
   width: 100%;
   padding: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
   color: white;
   border: none;
   border-radius: 8px;
