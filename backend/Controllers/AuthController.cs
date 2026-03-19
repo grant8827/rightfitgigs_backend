@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
 using RightFitGigs.DTOs;
 using RightFitGigs.Models;
+using RightFitGigs.Services;
 using System.ComponentModel.DataAnnotations;
 
 namespace RightFitGigs.Controllers
@@ -15,11 +16,13 @@ namespace RightFitGigs.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly EmailService _emailService;
 
-        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment)
+        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment, EmailService emailService)
         {
             _context = context;
             _environment = environment;
+            _emailService = emailService;
         }
 
         [HttpPost("register")]
@@ -109,6 +112,9 @@ namespace RightFitGigs.Controllers
                     IsActive = user.IsActive,
                     IsAdmin = user.IsAdmin
                 };
+
+                // Fire welcome email (non-blocking)
+                _ = _emailService.SendWelcomeAsync(user.Email, user.FirstName, user.UserType);
 
                 return StatusCode(201, response);
             }

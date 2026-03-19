@@ -5,6 +5,7 @@ using Microsoft.Extensions.FileProviders;
 using Npgsql;
 using RightFitGigs.Data;
 using RightFitGigs.Models;
+using RightFitGigs.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<EmailService>();
 
 var frontendUrl = builder.Configuration["FRONTEND_URL"];
 var defaultFrontendUrl = "https://rightfitgigsfrontendr.up.railway.app";

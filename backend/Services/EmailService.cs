@@ -1,0 +1,189 @@
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
+
+namespace RightFitGigs.Services
+{
+    public class EmailSettings
+    {
+        public string Host { get; set; } = string.Empty;
+        public int Port { get; set; } = 465;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string FromName { get; set; } = "RightFitGigs";
+    }
+
+    public class EmailService
+    {
+        private readonly EmailSettings _settings;
+        private readonly ILogger<EmailService> _logger;
+
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+        {
+            _settings = configuration.GetSection("Email").Get<EmailSettings>() ?? new EmailSettings();
+            _logger = logger;
+        }
+
+        // ─── Core Send ────────────────────────────────────────────────────────
+
+        public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.Password))
+            {
+                _logger.LogWarning("Email not sent — Email:Password is not configured. Subject: {Subject}", subject);
+                return;
+            }
+
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(_settings.FromName, _settings.Username));
+                message.To.Add(new MailboxAddress(toName, toEmail));
+                message.Subject = subject;
+
+                var builder = new BodyBuilder { HtmlBody = htmlBody };
+                message.Body = builder.ToMessageBody();
+
+                using var client = new SmtpClient();
+                await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.SslOnConnect);
+                await client.AuthenticateAsync(_settings.Username, _settings.Password);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+
+                _logger.LogInformation("Email sent to {Email} — {Subject}", toEmail, subject);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send email to {Email} — {Subject}", toEmail, subject);
+                // Don't throw — email failure should never break the main request
+            }
+        }
+
+        // ─── Welcome Email ────────────────────────────────────────────────────
+
+        public async Task SendWelcomeAsync(string email, string firstName, string userType)
+        {
+            var role = userType == "Employer" ? "employer" : "job seeker";
+            var html = $@"
+<div style='font-family:sans-serif;max-width:600px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
+  <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
+    <h1 style='color:white;margin:0;font-size:1.8rem;'>Welcome to RightFitGigs!</h1>
+  </div>
+  <div style='padding:2rem;'>
+    <p style='font-size:1.1rem;color:#374151;'>Hi <strong>{firstName}</strong>,</p>
+    <p style='color:#6b7280;line-height:1.7;'>
+      Your account has been created successfully as a <strong>{role}</strong>.
+      {(userType == "Employer"
+        ? "You can now post jobs and review applications from talented workers."
+        : "You can now browse jobs and apply with your profile.")}
+    </p>
+    <div style='text-align:center;margin:2rem 0;'>
+      <a href='https://rightfitgigs.com' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+        Get Started
+      </a>
+    </div>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;margin-top:2rem;'>
+      RightFitGigs &mdash; Connecting talent with opportunity
+    </p>
+  </div>
+</div>";
+
+            await SendAsync(email, firstName, "Welcome to RightFitGigs! 🎉", html);
+        }
+
+        // ─── Application Submitted (to worker) ───────────────────────────────
+
+        public async Task SendApplicationConfirmationAsync(string workerEmail, string workerName, string jobTitle, string company)
+        {
+            var html = $@"
+<div style='font-family:sans-serif;max-width:600px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
+  <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
+    <h1 style='color:white;margin:0;font-size:1.6rem;'>Application Submitted ✅</h1>
+  </div>
+  <div style='padding:2rem;'>
+    <p style='font-size:1.05rem;color:#374151;'>Hi <strong>{workerName}</strong>,</p>
+    <p style='color:#6b7280;line-height:1.7;'>
+      Your application for <strong>{jobTitle}</strong> at <strong>{company}</strong> has been submitted successfully.
+    </p>
+    <div style='background:#eef2ff;border-left:4px solid #4f46e5;border-radius:6px;padding:1rem 1.25rem;margin:1.5rem 0;'>
+      <p style='margin:0;color:#3730a3;font-weight:500;'>What happens next?</p>
+      <p style='margin:0.5rem 0 0;color:#6b7280;font-size:0.9rem;line-height:1.6;'>
+        The employer will review your profile and cover letter. You'll receive a notification if your status changes.
+        You can track your applications in your dashboard.
+      </p>
+    </div>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;margin-top:2rem;'>
+      RightFitGigs &mdash; Good luck with your application!
+    </p>
+  </div>
+</div>";
+
+            await SendAsync(workerEmail, workerName, $"Application submitted: {jobTitle} at {company}", html);
+        }
+
+        // ─── New Application Alert (to employer) ─────────────────────────────
+
+        public async Task SendNewApplicationAlertAsync(string employerEmail, string employerName, string workerName, string jobTitle, string applicationId)
+        {
+            var html = $@"
+<div style='font-family:sans-serif;max-width:600px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
+  <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
+    <h1 style='color:white;margin:0;font-size:1.6rem;'>New Application Received 📬</h1>
+  </div>
+  <div style='padding:2rem;'>
+    <p style='font-size:1.05rem;color:#374151;'>Hi <strong>{employerName}</strong>,</p>
+    <p style='color:#6b7280;line-height:1.7;'>
+      <strong>{workerName}</strong> has applied for your <strong>{jobTitle}</strong> position.
+    </p>
+    <div style='text-align:center;margin:2rem 0;'>
+      <a href='https://rightfitgigs.com' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+        Review Application
+      </a>
+    </div>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;margin-top:2rem;'>
+      RightFitGigs &mdash; Connecting talent with opportunity
+    </p>
+  </div>
+</div>";
+
+            await SendAsync(employerEmail, employerName, $"New application for {jobTitle} — {workerName}", html);
+        }
+
+        // ─── Application Status Update (to worker) ───────────────────────────
+
+        public async Task SendStatusUpdateAsync(string workerEmail, string workerName, string jobTitle, string company, string newStatus)
+        {
+            var (emoji, headline, message) = newStatus.ToLower() switch
+            {
+                "accepted"    => ("🎉", "Great news!", $"Your application for <strong>{jobTitle}</strong> at <strong>{company}</strong> has been <strong style='color:#14b8a6;'>accepted</strong>. Congratulations!"),
+                "interviewing"=> ("📅", "Interview Invitation!", $"You've been invited to interview for <strong>{jobTitle}</strong> at <strong>{company}</strong>. Log in to your dashboard for details."),
+                "offer"       => ("💼", "Job Offer!", $"You've received a job offer for <strong>{jobTitle}</strong> at <strong>{company}</strong>. Log in to review it."),
+                "rejected"    => ("📋", "Application Update", $"Thank you for applying for <strong>{jobTitle}</strong> at <strong>{company}</strong>. Unfortunately, you were not selected at this time. Don't give up — more opportunities await!"),
+                "reviewing"   => ("👀", "Application Being Reviewed", $"Your application for <strong>{jobTitle}</strong> at <strong>{company}</strong> is currently being reviewed."),
+                _             => ("📢", "Application Update", $"Your application status for <strong>{jobTitle}</strong> at <strong>{company}</strong> has been updated to <strong>{newStatus}</strong>."),
+            };
+
+            var html = $@"
+<div style='font-family:sans-serif;max-width:600px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
+  <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
+    <div style='font-size:2.5rem;margin-bottom:0.5rem;'>{emoji}</div>
+    <h1 style='color:white;margin:0;font-size:1.6rem;'>{headline}</h1>
+  </div>
+  <div style='padding:2rem;'>
+    <p style='font-size:1.05rem;color:#374151;'>Hi <strong>{workerName}</strong>,</p>
+    <p style='color:#6b7280;line-height:1.7;'>{message}</p>
+    <div style='text-align:center;margin:2rem 0;'>
+      <a href='https://rightfitgigs.com' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+        View Dashboard
+      </a>
+    </div>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;margin-top:2rem;'>
+      RightFitGigs &mdash; Connecting talent with opportunity
+    </p>
+  </div>
+</div>";
+
+            await SendAsync(workerEmail, workerName, $"{emoji} Application update: {jobTitle} at {company}", html);
+        }
+    }
+}

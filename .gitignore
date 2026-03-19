@@ -49,3 +49,6 @@ backend/obj/
 backend/bin/
 backend/out/
 backend/uploads/
+
+# Secrets — never commit passwords/keys
+backend/appsettings.Development.json

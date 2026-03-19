@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
 using RightFitGigs.DTOs;
 using RightFitGigs.Models;
+using RightFitGigs.Services;
 
 namespace RightFitGigs.Controllers
 {
@@ -11,10 +12,12 @@ namespace RightFitGigs.Controllers
     public class ApplicationsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly EmailService _emailService;
 
-        public ApplicationsController(ApplicationDbContext context)
+        public ApplicationsController(ApplicationDbContext context, EmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         [HttpPost]
@@ -301,6 +304,28 @@ namespace RightFitGigs.Controllers
 
                 application.Status = request.Status;
                 application.UpdatedDate = DateTime.UtcNow;
+
+                // Fire status update email to worker (non-blocking)
+                if (!string.IsNullOrEmpty(application.WorkerEmail))
+                {
+                    _ = _emailService.SendStatusUpdateAsync(
+                        application.WorkerEmail,
+                        application.WorkerName,
+                        application.Job?.Title ?? "the position",
+                        application.Job?.Company ?? "the company",
+                        request.Status);
+                }
+
+                // Fire status update email to worker (non-blocking)
+                if (!string.IsNullOrEmpty(application.WorkerEmail))
+                {
+                    _ = _emailService.SendStatusUpdateAsync(
+                        application.WorkerEmail,
+                        application.WorkerName,
+                        application.Job?.Title ?? "the position",
+                        application.Job?.Company ?? "the company",
+                        request.Status);
+                }
 
                 // Create notification for the worker about status change
                 var statusMessage = request.Status.ToLower() switch
