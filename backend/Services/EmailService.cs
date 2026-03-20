@@ -24,6 +24,40 @@ namespace RightFitGigs.Services
             _logger = logger;
         }
 
+        // ─── Test Send (throws on failure so caller sees the error) ──────────
+
+        public async Task<object> SendTestAsync(string toEmail)
+        {
+            var configStatus = new
+            {
+                host = _settings.Host,
+                port = _settings.Port,
+                username = _settings.Username,
+                passwordSet = !string.IsNullOrWhiteSpace(_settings.Password),
+                passwordLength = _settings.Password?.Length ?? 0
+            };
+
+            if (string.IsNullOrWhiteSpace(_settings.Password))
+                throw new InvalidOperationException($"Email:Password is empty. Config: host={_settings.Host}, user={_settings.Username}");
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.FromName, _settings.Username));
+            message.To.Add(new MailboxAddress("Test", toEmail));
+            message.Subject = "✅ RightFitGigs Email Test";
+            message.Body = new BodyBuilder
+            {
+                HtmlBody = "<div style='font-family:sans-serif;max-width:600px;margin:auto;'><div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;border-radius:12px 12px 0 0;'><h1 style='color:white;margin:0;'>Email Test ✅</h1></div><div style='padding:2rem;background:#f9fafb;border-radius:0 0 12px 12px;'><p>SMTP is working correctly for <strong>RightFitGigs</strong>.</p><p style='color:#6b7280;font-size:0.9rem;'>Sent via webhosting2023.is.cc on port 465.</p></div></div>"
+            }.ToMessageBody();
+
+            using var client = new SmtpClient();
+            await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.SslOnConnect);
+            await client.AuthenticateAsync(_settings.Username, _settings.Password);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            return new { success = true, message = $"Email sent to {toEmail}", config = configStatus };
+        }
+
         // ─── Core Send ────────────────────────────────────────────────────────
 
         public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody)

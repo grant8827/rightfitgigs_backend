@@ -124,6 +124,20 @@ namespace RightFitGigs.Controllers
             }
         }
 
+        [HttpGet("test-email")]
+        public async Task<IActionResult> TestEmail([FromQuery] string to = "grant88271@gmail.com")
+        {
+            try
+            {
+                var result = await _emailService.SendTestAsync(to);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message, type = ex.GetType().Name });
+            }
+        }
+
         [HttpPost("login")]
         public async Task<ActionResult<UserResponse>> Login([FromBody] LoginRequest request)
         {
