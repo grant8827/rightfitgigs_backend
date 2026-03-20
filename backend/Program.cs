@@ -20,6 +20,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<EmailService>();
 
 var frontendUrl = builder.Configuration["FRONTEND_URL"];

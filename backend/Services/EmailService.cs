@@ -1,95 +1,94 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace RightFitGigs.Services
 {
-    public class EmailSettings
+    public class MailtrapSettings
     {
-        public string Host { get; set; } = string.Empty;
-        public int Port { get; set; } = 465;
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string ApiToken { get; set; } = string.Empty;
+        public string FromEmail { get; set; } = "info@rightfitgigs.com";
         public string FromName { get; set; } = "RightFitGigs";
     }
 
     public class EmailService
     {
-        private readonly EmailSettings _settings;
+        private readonly MailtrapSettings _settings;
         private readonly ILogger<EmailService> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+        private const string SendUrl = "https://send.api.mailtrap.io/api/send";
+
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IHttpClientFactory httpClientFactory)
         {
-            _settings = configuration.GetSection("Email").Get<EmailSettings>() ?? new EmailSettings();
+            _settings = configuration.GetSection("Mailtrap").Get<MailtrapSettings>() ?? new MailtrapSettings();
             _logger = logger;
+            _httpClientFactory = httpClientFactory;
         }
 
-        // ─── Test Send (throws on failure so caller sees the error) ──────────
+        // ─── Test Send (throws on error so the test endpoint surfaces details) ──
 
         public async Task<object> SendTestAsync(string toEmail)
         {
-            var configStatus = new
-            {
-                host = _settings.Host,
-                port = _settings.Port,
-                username = _settings.Username,
-                passwordSet = !string.IsNullOrWhiteSpace(_settings.Password),
-                passwordLength = _settings.Password?.Length ?? 0
-            };
+            if (string.IsNullOrWhiteSpace(_settings.ApiToken))
+                throw new InvalidOperationException("Mailtrap:ApiToken is not configured.");
 
-            if (string.IsNullOrWhiteSpace(_settings.Password))
-                throw new InvalidOperationException($"Email:Password is empty. Config: host={_settings.Host}, user={_settings.Username}");
+            await SendCoreAsync(toEmail, "Test", "✅ RightFitGigs Email Test",
+                "<div style='font-family:sans-serif;max-width:600px;margin:auto;'>" +
+                "<div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;border-radius:12px 12px 0 0;'>" +
+                "<h1 style='color:white;margin:0;'>Email Test ✅</h1></div>" +
+                "<div style='padding:2rem;background:#f9fafb;border-radius:0 0 12px 12px;'>" +
+                "<p>Mailtrap API is working correctly for <strong>RightFitGigs</strong>.</p></div></div>");
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_settings.FromName, _settings.Username));
-            message.To.Add(new MailboxAddress("Test", toEmail));
-            message.Subject = "✅ RightFitGigs Email Test";
-            message.Body = new BodyBuilder
-            {
-                HtmlBody = "<div style='font-family:sans-serif;max-width:600px;margin:auto;'><div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;border-radius:12px 12px 0 0;'><h1 style='color:white;margin:0;'>Email Test ✅</h1></div><div style='padding:2rem;background:#f9fafb;border-radius:0 0 12px 12px;'><p>SMTP is working correctly for <strong>RightFitGigs</strong>.</p><p style='color:#6b7280;font-size:0.9rem;'>Sent via webhosting2023.is.cc on port 465.</p></div></div>"
-            }.ToMessageBody();
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.SslOnConnect);
-            await client.AuthenticateAsync(_settings.Username, _settings.Password);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            return new { success = true, message = $"Email sent to {toEmail}", config = configStatus };
+            return new { success = true, message = $"Email sent to {toEmail}", from = _settings.FromEmail };
         }
 
         // ─── Core Send ────────────────────────────────────────────────────────
 
         public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody)
         {
-            if (string.IsNullOrWhiteSpace(_settings.Password))
+            if (string.IsNullOrWhiteSpace(_settings.ApiToken))
             {
-                _logger.LogWarning("Email not sent — Email:Password is not configured. Subject: {Subject}", subject);
+                _logger.LogWarning("Email not sent — Mailtrap:ApiToken is not configured. Subject: {Subject}", subject);
                 return;
             }
 
             try
             {
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(_settings.FromName, _settings.Username));
-                message.To.Add(new MailboxAddress(toName, toEmail));
-                message.Subject = subject;
-
-                var builder = new BodyBuilder { HtmlBody = htmlBody };
-                message.Body = builder.ToMessageBody();
-
-                using var client = new SmtpClient();
-                await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.SslOnConnect);
-                await client.AuthenticateAsync(_settings.Username, _settings.Password);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-
+                await SendCoreAsync(toEmail, toName, subject, htmlBody);
                 _logger.LogInformation("Email sent to {Email} — {Subject}", toEmail, subject);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send email to {Email} — {Subject}", toEmail, subject);
                 // Don't throw — email failure should never break the main request
+            }
+        }
+
+        private async Task SendCoreAsync(string toEmail, string toName, string subject, string htmlBody)
+        {
+            var payload = new
+            {
+                from = new { email = _settings.FromEmail, name = _settings.FromName },
+                to = new[] { new { email = toEmail, name = toName } },
+                subject,
+                html = htmlBody
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _settings.ApiToken);
+
+            var response = await client.PostAsync(SendUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException(
+                    $"Mailtrap API returned {(int)response.StatusCode}: {body}");
             }
         }
 
