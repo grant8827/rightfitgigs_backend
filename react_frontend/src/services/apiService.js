@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
-const defaultApiOrigin = 'https://sublime-alignment-production.up.railway.app';
+const defaultApiOrigin = 'https://rightfitgigsbackend-production.up.railway.app';
 const fallbackLocalOrigin = 'http://localhost:5071';
 
 const normalizedOrigin = (configuredApiUrl && configuredApiUrl.length > 0)
