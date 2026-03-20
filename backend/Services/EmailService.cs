@@ -219,5 +219,38 @@ namespace RightFitGigs.Services
 
             await SendAsync(workerEmail, workerName, $"{emoji} Application update: {jobTitle} at {company}", html);
         }
+
+        // ─── Password Reset ──────────────────────────────────────────────────
+
+        public async Task SendPasswordResetAsync(string toEmail, string firstName, string resetLink)
+        {
+            var html = $@"
+<div style='font-family:sans-serif;max-width:600px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
+  <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
+    <div style='font-size:2.5rem;margin-bottom:0.5rem;'>🔑</div>
+    <h1 style='color:white;margin:0;font-size:1.6rem;'>Reset Your Password</h1>
+  </div>
+  <div style='padding:2rem;'>
+    <p style='font-size:1.05rem;color:#374151;'>Hi <strong>{firstName}</strong>,</p>
+    <p style='color:#6b7280;line-height:1.7;'>
+      We received a request to reset your password. Click the button below to choose a new one.
+      This link expires in <strong>1 hour</strong>.
+    </p>
+    <div style='text-align:center;margin:2rem 0;'>
+      <a href='{resetLink}' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+        Reset Password
+      </a>
+    </div>
+    <p style='color:#6b7280;font-size:0.9rem;line-height:1.6;'>
+      If you didn't request a password reset, you can safely ignore this email — your password won't change.
+    </p>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;margin-top:2rem;'>
+      RightFitGigs &mdash; Connecting talent with opportunity
+    </p>
+  </div>
+</div>";
+
+            await SendAsync(toEmail, firstName, "Reset your RightFitGigs password", html);
+        }
     }
 }

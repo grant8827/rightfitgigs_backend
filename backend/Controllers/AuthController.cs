@@ -482,6 +482,76 @@ namespace RightFitGigs.Controllers
             }
         }
 
+        // ─── Forgot Password ─────────────────────────────────────────────────
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var email = request.Email.Trim().ToLowerInvariant();
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+
+                // Always return 200 so we don't leak whether the email exists
+                if (user == null)
+                    return Ok(new { message = "If an account with that email exists, a reset link has been sent." });
+
+                // Generate a secure random token
+                var tokenBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+                var token = Convert.ToBase64String(tokenBytes)
+                    .Replace("+", "-").Replace("/", "_").Replace("=", ""); // URL-safe
+
+                user.PasswordResetToken = token;
+                user.PasswordResetExpiry = DateTime.UtcNow.AddHours(1);
+                await _context.SaveChangesAsync();
+
+                var resetLink = $"https://rightfitgigs.com/reset-password?token={Uri.EscapeDataString(token)}";
+                _ = _emailService.SendPasswordResetAsync(user.Email, user.FirstName, resetLink);
+
+                return Ok(new { message = "If an account with that email exists, a reset link has been sent." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // ─── Reset Password ──────────────────────────────────────────────────
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var user = await _context.Users.FirstOrDefaultAsync(u =>
+                    u.PasswordResetToken == request.Token &&
+                    u.PasswordResetExpiry != null &&
+                    u.PasswordResetExpiry > DateTime.UtcNow &&
+                    u.IsActive);
+
+                if (user == null)
+                    return BadRequest(new { message = "This reset link is invalid or has expired." });
+
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                user.PasswordResetToken = null;
+                user.PasswordResetExpiry = null;
+                user.UpdatedDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Your password has been reset. You can now log in." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         private static string NormalizeUserType(string? userType)
         {
             if (string.IsNullOrWhiteSpace(userType))

@@ -236,6 +236,27 @@ try
         {
             Console.WriteLine($"Warning: Could not add EducationLevel to Users: {ex.Message}");
         }
+
+        // Add PasswordResetToken and PasswordResetExpiry columns to Users if they don't exist
+        try
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Users' AND column_name = 'PasswordResetToken') THEN
+                        ALTER TABLE ""Users"" ADD COLUMN ""PasswordResetToken"" text;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Users' AND column_name = 'PasswordResetExpiry') THEN
+                        ALTER TABLE ""Users"" ADD COLUMN ""PasswordResetExpiry"" timestamp with time zone;
+                    END IF;
+                END $$;";
+            cmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not add PasswordReset columns to Users: {ex.Message}");
+        }
     }
 
     var testEmployerEmail = "employer.test@example.com";

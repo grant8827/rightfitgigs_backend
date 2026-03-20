@@ -77,6 +77,10 @@ namespace RightFitGigs.Models
         
         public bool IsAdmin { get; set; } = false;
         
+        // Password reset
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetExpiry { get; set; }
+        
         // Navigation properties
         public string? CompanyId { get; set; }
         public virtual Company? Company { get; set; }
