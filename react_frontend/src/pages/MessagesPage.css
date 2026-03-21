@@ -289,14 +289,80 @@
   font-size: 16px;
 }
 
+/* Back button - mobile only */
+.btn-back-mobile {
+  display: none;
+  background: none;
+  border: none;
+  color: #2196f3;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 8px 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .messages-container {
+    height: calc(100vh - 70px);
+    border-radius: 0;
+    position: relative;
+  }
+
   .conversations-list {
     width: 100%;
-    max-width: 300px;
+    max-width: 100%;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+    transition: transform 0.25s ease;
   }
-  
+
+  .conversations-list.mobile-hidden {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+
+  .messages-area {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 2;
+    transition: transform 0.25s ease;
+    transform: translateX(100%);
+  }
+
+  .messages-area.mobile-hidden {
+    transform: translateX(100%);
+    pointer-events: none;
+  }
+
+  /* When chat is visible, slide it in */
+  .messages-area:not(.mobile-hidden) {
+    transform: translateX(0);
+  }
+
+  .btn-back-mobile {
+    display: block;
+  }
+
   .message-content {
     max-width: 85%;
+  }
+
+  .message-input-form {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .message-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+  }
+
+  .btn-send {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    font-size: 13px;
   }
 }

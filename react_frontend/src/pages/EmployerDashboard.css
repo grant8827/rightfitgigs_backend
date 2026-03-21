@@ -1295,3 +1295,125 @@
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
+
+/* ── My Jobs + Candidates mobile responsive ── */
+@media (max-width: 600px) {
+  /* ── Jobs header ── */
+  .jobs-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .btn-add-job {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ── Job card: compact ── */
+  .job-card {
+    padding: 0.85rem;
+  }
+
+  .job-card-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .job-card-header h3 {
+    font-size: 0.95rem;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Hide description on mobile — biggest space saver */
+  .job-description {
+    display: none;
+  }
+
+  /* Detail chips: wrap compactly */
+  .job-details {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Actions: 2×2 grid */
+  .job-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .job-actions button {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  /* Modal form: single column */
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Candidates tab ── */
+  .application-card {
+    padding: 0.85rem;
+  }
+
+  .application-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .application-header h3 {
+    font-size: 1rem;
+  }
+
+  /* Stack label+value vertically */
+  .detail-row {
+    flex-direction: column;
+    gap: 0.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .detail-row .label {
+    min-width: unset;
+    font-size: 0.75rem;
+    margin-right: 0;
+  }
+
+  /* Hide lower-priority details on mobile */
+  .mobile-hide {
+    display: none;
+  }
+
+  /* Application action buttons: 2 columns */
+  .application-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .application-actions button,
+  .btn-view-profile,
+  .btn-message {
+    min-width: unset;
+    font-size: 0.82rem;
+    padding: 0.5rem 0.5rem;
+  }
+
+  .status-menu-wrapper {
+    grid-column: 1 / -1;
+  }
+
+  .status-menu-wrapper .btn-menu {
+    width: 100%;
+  }
+}

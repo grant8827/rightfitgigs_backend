@@ -669,20 +669,20 @@ const EmployerDashboard = () => {
                         <span className="label">Email:</span>
                         <a href={`mailto:${app.workerEmail}`}>{app.workerEmail}</a>
                       </div>
-                      <div className="detail-row">
+                      <div className="detail-row mobile-hide">
                         <span className="label">Phone:</span>
                         <span>{app.workerPhone}</span>
                       </div>
-                      <div className="detail-row">
+                      <div className="detail-row mobile-hide">
                         <span className="label">Location:</span>
                         <span>{app.workerLocation}</span>
                       </div>
-                      <div className="detail-row">
+                      <div className="detail-row mobile-hide">
                         <span className="label">Skills:</span>
                         <span>{app.workerSkills}</span>
                       </div>
                       {app.coverLetter && (
-                        <div className="cover-letter">
+                        <div className="cover-letter mobile-hide">
                           <span className="label">Cover Letter:</span>
                           <p>{app.coverLetter}</p>
                         </div>

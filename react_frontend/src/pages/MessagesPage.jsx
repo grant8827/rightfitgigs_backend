@@ -14,6 +14,7 @@ const MessagesPage = ({ initialRecipient = null, onBack = null }) => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
 
   useEffect(() => {
     loadConversations();
@@ -158,7 +159,7 @@ const MessagesPage = ({ initialRecipient = null, onBack = null }) => {
       
       <div className="messages-container">
         {/* Conversations List */}
-        <div className="conversations-list">
+        <div className={`conversations-list${mobileView === 'chat' ? ' mobile-hidden' : ''}`}>
           <div className="conversations-header">
             <h2>Messages</h2>
           </div>
@@ -184,6 +185,7 @@ const MessagesPage = ({ initialRecipient = null, onBack = null }) => {
               onClick={() => {
                 setSelectedConversation(conv);
                 loadMessages(conv.conversationId);
+                setMobileView('chat');
               }}
             >
               <div className="conversation-avatar">
@@ -205,10 +207,11 @@ const MessagesPage = ({ initialRecipient = null, onBack = null }) => {
         </div>
 
         {/* Messages Area */}
-        <div className="messages-area">
+        <div className={`messages-area${mobileView === 'list' ? ' mobile-hidden' : ''}`}>
           {selectedConversation ? (
             <>
               <div className="messages-header">
+                <button className="btn-back-mobile" onClick={() => setMobileView('list')}>← Back</button>
                 <div>
                   <h3>{selectedConversation.recipientName}</h3>
                   {selectedConversation.jobTitle && (
