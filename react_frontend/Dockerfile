@@ -1,14 +1,20 @@
-FROM node:20-alpine
-WORKDIR /app
+FROM nginx:alpine
 
-# Install serve globally
-RUN npm install -g serve
+# Copy pre-built dist to nginx html folder
+COPY dist /usr/share/nginx/html
 
-# Copy the pre-built dist folder
-COPY dist ./dist
+# SPA routing: serve index.html for all unknown routes
+RUN echo 'server { 
+  listen $PORT; 
+  root /usr/share/nginx/html; 
+  index index.html; 
+  location / { 
+    try_files $uri $uri/ /index.html; 
+  } 
+}' > /etc/nginx/templates/default.conf.template
 
-# Expose port
-EXPOSE 3000
+# Railway sets $PORT dynamically
+ENV PORT=8080
+EXPOSE 8080
 
-# Serve the app
-CMD ["sh", "-c", "serve -s dist --listen tcp://0.0.0.0:${PORT:-3000}"]
+CMD ["nginx", "-g", "daemon off;"]
