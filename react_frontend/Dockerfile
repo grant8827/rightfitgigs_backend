@@ -1,20 +1,16 @@
 FROM nginx:alpine
 
-# Copy pre-built dist to nginx html folder
+# Copy pre-built dist
 COPY dist /usr/share/nginx/html
 
-# SPA routing: serve index.html for all unknown routes
-RUN echo 'server { 
-  listen $PORT; 
-  root /usr/share/nginx/html; 
-  index index.html; 
-  location / { 
-    try_files $uri $uri/ /index.html; 
-  } 
-}' > /etc/nginx/templates/default.conf.template
+# Copy nginx config template and startup script
+COPY nginx.conf /etc/nginx/conf.d/nginx.conf.template
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
-# Railway sets $PORT dynamically
-ENV PORT=8080
-EXPOSE 8080
+# Remove default nginx config
+RUN rm -f /etc/nginx/conf.d/default.conf
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 80
+
+CMD ["/start.sh"]
