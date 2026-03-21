@@ -2,9 +2,10 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install --include=dev"]
 
-# No build step - dist is pre-committed, vite is in devDependencies
+[phases.build]
+cmds = ["npm run build"]
 
 [start]
 cmd = "./node_modules/.bin/serve -s dist --listen tcp://0.0.0.0:$PORT"
