@@ -16,6 +16,7 @@ namespace RightFitGigs.Services
         private readonly MailtrapSettings _settings;
         private readonly ILogger<EmailService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly string _appBaseUrl;
 
         private const string SendUrl = "https://send.api.mailtrap.io/api/send";
 
@@ -24,6 +25,8 @@ namespace RightFitGigs.Services
             _settings = configuration.GetSection("Mailtrap").Get<MailtrapSettings>() ?? new MailtrapSettings();
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            var configuredFrontendUrl = configuration["FRONTEND_URL"];
+            _appBaseUrl = NormalizeFrontendUrl(configuredFrontendUrl);
         }
 
         // ─── Test Send (throws on error so the test endpoint surfaces details) ──
@@ -111,7 +114,7 @@ namespace RightFitGigs.Services
         : "You can now browse jobs and apply with your profile.")}
     </p>
     <div style='text-align:center;margin:2rem 0;'>
-      <a href='https://rightfitgigs.com' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+      <a href='{_appBaseUrl}' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
         Get Started
       </a>
     </div>
@@ -169,7 +172,7 @@ namespace RightFitGigs.Services
       <strong>{workerName}</strong> has applied for your <strong>{jobTitle}</strong> position.
     </p>
     <div style='text-align:center;margin:2rem 0;'>
-      <a href='https://rightfitgigs.com' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+      <a href='{_appBaseUrl}' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
         Review Application
       </a>
     </div>
@@ -206,7 +209,7 @@ namespace RightFitGigs.Services
     <p style='font-size:1.05rem;color:#374151;'>Hi <strong>{workerName}</strong>,</p>
     <p style='color:#6b7280;line-height:1.7;'>{message}</p>
     <div style='text-align:center;margin:2rem 0;'>
-      <a href='https://rightfitgigs.com' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
+      <a href='{_appBaseUrl}' style='background:linear-gradient(135deg,#4f46e5,#14b8a6);color:white;padding:0.85rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;'>
         View Dashboard
       </a>
     </div>
@@ -251,5 +254,29 @@ namespace RightFitGigs.Services
 
             await SendAsync(toEmail, firstName, "Reset your RightFitGigs password", html);
         }
+
+    private static string NormalizeFrontendUrl(string? configuredFrontendUrl)
+    {
+      const string defaultFrontendUrl = "https://www.rightfitgigs.com";
+
+      if (string.IsNullOrWhiteSpace(configuredFrontendUrl))
+      {
+        return defaultFrontendUrl;
+      }
+
+      var trimmedUrl = configuredFrontendUrl.Trim().TrimEnd('/');
+
+      if (!Uri.TryCreate(trimmedUrl, UriKind.Absolute, out var uri))
+      {
+        return defaultFrontendUrl;
+      }
+
+      if (uri.Host.Equals("rightfitgigs.com", StringComparison.OrdinalIgnoreCase))
+      {
+        return $"{uri.Scheme}://www.rightfitgigs.com";
+      }
+
+      return trimmedUrl;
+    }
     }
 }

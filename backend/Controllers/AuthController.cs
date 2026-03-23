@@ -17,12 +17,16 @@ namespace RightFitGigs.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly EmailService _emailService;
+        private readonly string _frontendBaseUrl;
 
-        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment, EmailService emailService)
+        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment, EmailService emailService, IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
             _emailService = emailService;
+
+            var configuredFrontendUrl = configuration["FRONTEND_URL"];
+            _frontendBaseUrl = NormalizeFrontendUrl(configuredFrontendUrl);
         }
 
         [HttpPost("register")]
@@ -508,7 +512,7 @@ namespace RightFitGigs.Controllers
                 user.PasswordResetExpiry = DateTime.UtcNow.AddHours(1);
                 await _context.SaveChangesAsync();
 
-                var resetLink = $"https://rightfitgigs.com/reset-password?token={Uri.EscapeDataString(token)}";
+                var resetLink = $"{_frontendBaseUrl}/reset-password?token={Uri.EscapeDataString(token)}";
                 _ = _emailService.SendPasswordResetAsync(user.Email, user.FirstName, resetLink);
 
                 return Ok(new { message = "If an account with that email exists, a reset link has been sent." });
@@ -571,6 +575,30 @@ namespace RightFitGigs.Controllers
             }
 
             return normalized;
+        }
+
+        private static string NormalizeFrontendUrl(string? configuredFrontendUrl)
+        {
+            const string defaultFrontendUrl = "https://www.rightfitgigs.com";
+
+            if (string.IsNullOrWhiteSpace(configuredFrontendUrl))
+            {
+                return defaultFrontendUrl;
+            }
+
+            var trimmedUrl = configuredFrontendUrl.Trim().TrimEnd('/');
+
+            if (!Uri.TryCreate(trimmedUrl, UriKind.Absolute, out var uri))
+            {
+                return defaultFrontendUrl;
+            }
+
+            if (uri.Host.Equals("rightfitgigs.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{uri.Scheme}://www.rightfitgigs.com";
+            }
+
+            return trimmedUrl;
         }
     }
 
