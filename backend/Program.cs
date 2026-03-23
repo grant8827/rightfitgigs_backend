@@ -114,8 +114,14 @@ try
 {
     using var scope = app.Services.CreateScope();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var hasPersistentUploadsPath = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("UPLOADS_PATH"));
     
     logger.LogInformation("Starting database initialization...");
+    logger.LogInformation("Uploads path resolved to {UploadsPath}. Persistent volume configured: {HasPersistentUploadsPath}", uploadsPath, hasPersistentUploadsPath);
+    if (!hasPersistentUploadsPath)
+    {
+        logger.LogWarning("UPLOADS_PATH is not configured. Uploaded files will be stored in container-local storage and may be lost after redeploy or restart.");
+    }
     
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     

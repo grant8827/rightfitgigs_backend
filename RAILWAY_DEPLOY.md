@@ -20,11 +20,14 @@ Equivalent commands:
 ### Required Environment Variables
 - `DATABASE_URL=postgresql://postgres:bKnpjKnCKoqpuWyTjTziZxfNtceZRXIs@hopper.proxy.rlwy.net:33137/railway`
 - `FRONTEND_URL=https://rightfitgigsfrontendr.up.railway.app`
+- `UPLOADS_PATH=/data/uploads`
 - `ASPNETCORE_URLS=http://0.0.0.0:${PORT}`
 
 ### Notes
 - The app runs EF migrations on startup (`context.Database.Migrate()`).
 - CORS is configured to allow `FRONTEND_URL`, your Railway frontend URL, and localhost dev URLs.
+- Attach a persistent Railway volume to the backend service and point `UPLOADS_PATH` at a folder on that mounted volume.
+- If `UPLOADS_PATH` is not set, uploaded resumes and advertisement media will be stored inside the container and can be lost after redeploy or restart.
 
 ## 2) Frontend Service (`react_frontend`)
 

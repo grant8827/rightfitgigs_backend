@@ -13,6 +13,8 @@ namespace RightFitGigs.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AdvertisementsController> _logger;
         private readonly IWebHostEnvironment _environment;
+        private const long MaxImageFileSizeBytes = 10 * 1024 * 1024;
+        private const long MaxVideoFileSizeBytes = 25 * 1024 * 1024;
 
         public AdvertisementsController(
             ApplicationDbContext context, 
@@ -91,6 +93,7 @@ namespace RightFitGigs.Controllers
 
         // POST: api/advertisements
         [HttpPost]
+        [RequestSizeLimit(MaxVideoFileSizeBytes)]
         public async Task<ActionResult<Advertisement>> CreateAdvertisement([FromForm] AdvertisementCreateDto dto)
         {
             try
@@ -117,6 +120,13 @@ namespace RightFitGigs.Controllers
                     else
                     {
                         return BadRequest(new { message = "Invalid file type. Please upload an image or video file." });
+                    }
+
+                    var maxFileSize = adType == "Video" ? MaxVideoFileSizeBytes : MaxImageFileSizeBytes;
+                    if (dto.File.Length > maxFileSize)
+                    {
+                        var maxFileSizeInMb = maxFileSize / (1024 * 1024);
+                        return BadRequest(new { message = $"{adType} files must be {maxFileSizeInMb}MB or smaller." });
                     }
 
                     var uploadsRoot = Environment.GetEnvironmentVariable("UPLOADS_PATH")
@@ -181,6 +191,7 @@ namespace RightFitGigs.Controllers
 
         // PUT: api/advertisements/{id}
         [HttpPut("{id}")]
+        [RequestSizeLimit(MaxVideoFileSizeBytes)]
         public async Task<IActionResult> UpdateAdvertisement(string id, [FromForm] AdvertisementUpdateDto dto)
         {
             try
@@ -256,6 +267,25 @@ namespace RightFitGigs.Controllers
                     Directory.CreateDirectory(uploadsPath);
 
                     var fileExtension = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
+
+                    var allowedImageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                    var allowedVideoExtensions = new[] { ".mp4", ".webm", ".mov", ".avi" };
+                    var isImageFile = allowedImageExtensions.Contains(fileExtension);
+                    var isVideoFile = allowedVideoExtensions.Contains(fileExtension);
+
+                    if (!isImageFile && !isVideoFile)
+                    {
+                        return BadRequest(new { message = "Invalid file type. Please upload an image or video file." });
+                    }
+
+                    var maxFileSize = isVideoFile ? MaxVideoFileSizeBytes : MaxImageFileSizeBytes;
+                    if (dto.File.Length > maxFileSize)
+                    {
+                        var maxFileSizeInMb = maxFileSize / (1024 * 1024);
+                        var fileTypeLabel = isVideoFile ? "Video" : "Image";
+                        return BadRequest(new { message = $"{fileTypeLabel} files must be {maxFileSizeInMb}MB or smaller." });
+                    }
+
                     var fileName = $"{Guid.NewGuid()}{fileExtension}";
                     var filePath = Path.Combine(uploadsPath, fileName);
 
@@ -268,14 +298,11 @@ namespace RightFitGigs.Controllers
                     advertisement.FileName = dto.File.FileName;
 
                     // Update type based on new file
-                    var allowedImageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                    var allowedVideoExtensions = new[] { ".mp4", ".webm", ".mov", ".avi" };
-
-                    if (allowedImageExtensions.Contains(fileExtension))
+                    if (isImageFile)
                     {
                         advertisement.Type = "Image";
                     }
-                    else if (allowedVideoExtensions.Contains(fileExtension))
+                    else if (isVideoFile)
                     {
                         advertisement.Type = "Video";
                     }
