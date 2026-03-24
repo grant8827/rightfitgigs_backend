@@ -558,7 +558,20 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  margin: 6px 0 16px 0;
+  margin: 6px 0 10px 0;
+}
+
+/* Job description snippet in card */
+.job-description-preview {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.55;
+  margin: 8px 0 14px 0;
+  /* Clamp to 3 lines on desktop */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .job-card-actions {
@@ -806,6 +819,13 @@
 
   .job-card-actions button {
     width: 100%;
+  }
+
+  /* Show full description on mobile — no clamp */
+  .job-description-preview {
+    -webkit-line-clamp: unset;
+    overflow: visible;
+    display: block;
   }
 
   .application-header {

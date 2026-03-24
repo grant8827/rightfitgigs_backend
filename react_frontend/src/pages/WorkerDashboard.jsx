@@ -304,6 +304,9 @@ const WorkerDashboard = () => {
                       <p className="company">{job.company}</p>
                       <p className="salary">{job.salary}</p>
                       <p className="job-type">{job.type}{job.isRemote ? ' • Remote' : ''}</p>
+                      {job.description && (
+                        <p className="job-description-preview">{job.description}</p>
+                      )}
                       <div className="job-card-actions">
                         <button className="btn-secondary" onClick={() => { setSelectedJob(job); setIsModalOpen(true); }}>Details</button>
                         <button className="btn-apply" onClick={() => handleOpenApplyModal(job)}>Apply</button>
@@ -332,6 +335,9 @@ const WorkerDashboard = () => {
                     <p className="location">📍 {job.location}</p>
                     <p className="salary">💰 {job.salary}</p>
                     <p className="job-type">{job.type}</p>
+                    {job.description && (
+                      <p className="job-description-preview">{job.description}</p>
+                    )}
                     <div className="job-card-actions">
                       <button 
                         className="btn-secondary" 
