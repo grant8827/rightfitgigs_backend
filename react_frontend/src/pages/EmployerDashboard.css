@@ -1331,9 +1331,9 @@
     text-overflow: ellipsis;
   }
 
-  /* Hide description on mobile — biggest space saver */
-  .job-description {
-    display: none;
+  /* Hide description on job cards on mobile — biggest space saver */
+  .job-card .job-description {
+    display: block;
   }
 
   /* Detail chips: wrap compactly */
