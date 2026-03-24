@@ -27,8 +27,14 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
             {job.isSeasonal && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>🍂 Seasonal</span>}
           </div>
 
+          {/* Description — shown first so it's always visible */}
+          <div className="job-description">
+            <h3>Job Description</h3>
+            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
+          </div>
+
           {/* Key details grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', margin: '0.75rem 0', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+          <div className="job-details-grid">
             <div>
               <div style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Salary</div>
               <div style={{ fontWeight: 600, color: '#111827' }}>💰 {job.salary || 'Not specified'}</div>
@@ -57,12 +63,6 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
                 <div style={{ fontWeight: 600, color: '#111827' }}>📅 {postedDate}</div>
               </div>
             )}
-          </div>
-
-          {/* Description */}
-          <div className="job-description">
-            <h3>Job Description</h3>
-            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
           </div>
         </div>
 
