@@ -1,6 +1,24 @@
+import { useEffect } from 'react';
 import '../pages/styles.css';
 
 const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
+  // Lock body scroll when modal is open (prevents background scroll on iOS)
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.dataset.scrollY = scrollY;
+    } else {
+      document.body.style.overflow = '';
+      const scrollY = document.body.dataset.scrollY || 0;
+      delete document.body.dataset.scrollY;
+      window.scrollTo(0, parseInt(scrollY));
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !job) return null;
 
   const postedDate = job.postedDate
@@ -25,12 +43,6 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
             {job.isRemote && <span className="badge" style={{ background: '#d1fae5', color: '#065f46' }}>🌐 Remote</span>}
             {job.isUrgentlyHiring && <span className="badge" style={{ background: '#fee2e2', color: '#991b1b' }}>🔥 Urgently Hiring</span>}
             {job.isSeasonal && <span className="badge" style={{ background: '#fef3c7', color: '#92400e' }}>🍂 Seasonal</span>}
-          </div>
-
-          {/* Description — shown first so it's always visible */}
-          <div className="job-description">
-            <h3>Job Description</h3>
-            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
           </div>
 
           {/* Key details grid */}
@@ -63,6 +75,12 @@ const JobDetailsModal = ({ job, isOpen, onClose, onApply }) => {
                 <div style={{ fontWeight: 600, color: '#111827' }}>📅 {postedDate}</div>
               </div>
             )}
+          </div>
+
+          {/* Description — below the details grid */}
+          <div className="job-description">
+            <h3>Job Description</h3>
+            <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.7' }}>{job.description}</p>
           </div>
         </div>
 

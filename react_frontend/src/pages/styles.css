@@ -58,6 +58,7 @@
   padding: 1rem 1.5rem;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* iOS touch scroll */
+  touch-action: pan-y;               /* tell iOS this element handles vertical swipe */
   flex: 1;
   min-height: 0; /* required for flex + overflow-y to work */
 }
@@ -184,6 +185,7 @@
     min-height: 0;          /* critical: allows flex child to shrink and scroll */
     overflow-y: scroll;     /* force scroll track visible on iOS */
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .job-details-modal .modal-footer {
