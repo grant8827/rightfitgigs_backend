@@ -22,9 +22,14 @@ namespace RightFitGigs.Controllers
         {
             try
             {
-                // Return all jobs (both active and suspended)
-                // Let the frontend decide which ones to display
+                // If an employerId is provided the employer is viewing their own jobs —
+                // return all (active + suspended). For public views, only return active jobs.
                 var query = _context.Jobs.AsQueryable();
+
+                if (string.IsNullOrWhiteSpace(request.EmployerId))
+                {
+                    query = query.Where(j => j.IsActive);
+                }
 
                 // Apply search filters
                 if (!string.IsNullOrWhiteSpace(request.Search))

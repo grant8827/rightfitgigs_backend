@@ -43,7 +43,7 @@ const WorkerDashboard = () => {
     setLoadingRecommended(true);
     try {
       const data = await getJobs();
-      const activeJobs = data.filter(job => job.isActive);
+      const activeJobs = data; // backend already filters inactive jobs for public view
       // Score jobs by how many words from the worker's title appear in the job title
       const workerTitle = (user?.title || '').toLowerCase();
       const keywords = workerTitle.split(/\s+/).filter(w => w.length > 2);
@@ -78,9 +78,8 @@ const WorkerDashboard = () => {
       console.log('Fetching jobs...');
       const data = await getJobs();
       console.log('Jobs received:', data);
-      // Only show active jobs to workers
-      const activeJobs = data.filter(job => job.isActive);
-      setJobs(activeJobs);
+      // Backend already filters out inactive/suspended jobs for public view
+      setJobs(data);
     } catch (err) {
       setError('Failed to load jobs');
       console.error('Error fetching jobs:', err);
