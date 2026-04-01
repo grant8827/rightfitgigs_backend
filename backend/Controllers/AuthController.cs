@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,82 +18,134 @@ namespace RightFitGigs.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly EmailService _emailService;
+        private readonly JwtService _jwtService;
+        private readonly PendingRegistrationStore _pendingStore;
         private readonly string _frontendBaseUrl;
 
-        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment, EmailService emailService, IConfiguration configuration)
+        public AuthController(ApplicationDbContext context, IWebHostEnvironment environment, EmailService emailService, JwtService jwtService, PendingRegistrationStore pendingStore, IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
             _emailService = emailService;
+            _jwtService = jwtService;
+            _pendingStore = pendingStore;
 
             var configuredFrontendUrl = configuration["FRONTEND_URL"];
             _frontendBaseUrl = NormalizeFrontendUrl(configuredFrontendUrl);
         }
 
-        [HttpPost("register")]
-        public async Task<ActionResult<UserResponse>> Register([FromBody] RegisterRequest request)
+        // ─── Step 1: Validate data, store pending, send OTP ─────────────────
+        [HttpPost("register/initiate")]
+        public async Task<IActionResult> RegisterInitiate([FromBody] RegisterRequest request)
         {
             try
             {
                 if (!ModelState.IsValid)
-                {
                     return BadRequest(ModelState);
-                }
 
-                // Normalize email (trim and lowercase)
                 var normalizedEmail = request.Email.Trim().ToLowerInvariant();
                 var normalizedUserType = NormalizeUserType(request.UserType);
 
                 if (normalizedUserType != "Worker" && normalizedUserType != "Employer")
-                {
-                    return BadRequest("User type must be Worker or Employer");
-                }
+                    return BadRequest("User type must be Worker or Employer.");
 
-                // Check if user with email already exists
+                if (normalizedUserType == "Employer" && string.IsNullOrWhiteSpace(request.CompanyName))
+                    return BadRequest("Company name is required for employer registration.");
+
+                // Check the real DB — don't allow duplicate emails
                 var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
                 if (existingUser != null)
+                    return Conflict("An account with this email already exists.");
+
+                // Build pending record (password hashed here so we never store plaintext)
+                var otp = PendingRegistrationStore.GenerateOtp();
+                var pending = new PendingRegistration
                 {
-                    return Conflict($"User with email {request.Email} already exists");
-                }
+                    Email        = normalizedEmail,
+                    HashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                    FirstName    = request.FirstName,
+                    LastName     = request.LastName,
+                    Phone        = request.Phone ?? string.Empty,
+                    Location     = request.Location ?? string.Empty,
+                    Bio          = request.Bio ?? string.Empty,
+                    Skills       = request.Skills ?? string.Empty,
+                    Title        = request.Title ?? string.Empty,
+                    UserType     = normalizedUserType,
+                    CompanyName  = request.CompanyName,
+                    Description  = request.Description,
+                    Industry     = request.Industry,
+                    CompanySize  = request.CompanySize,
+                    Website      = request.Website,
+                    OtpCode      = otp,
+                    ExpiresAt    = PendingRegistrationStore.NewExpiry()
+                };
+
+                _pendingStore.Create(pending);
+
+                // Send OTP — non-blocking so slow email doesn't hang the response
+                _ = _emailService.SendOtpAsync(normalizedEmail, request.FirstName, otp);
+
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogInformation("OTP initiated for {Email}", normalizedEmail);
+
+                return Ok(new { message = "Verification code sent. Please check your email.", email = normalizedEmail });
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "RegisterInitiate failed");
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
+
+        // ─── Step 2: Verify OTP → save user to DB, return JWT ────────────────
+        [HttpPost("register/verify")]
+        public async Task<IActionResult> RegisterVerify([FromBody] VerifyOtpRequest request)
+        {
+            try
+            {
+                var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+                var (pending, error) = _pendingStore.Verify(normalizedEmail, request.Otp);
+
+                if (error != null)
+                    return BadRequest(new { error });
+
+                // Final duplicate check (tiny race-condition guard)
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == normalizedEmail);
+                if (existingUser != null)
+                    return Conflict("An account with this email already exists.");
 
                 Company? company = null;
-                
-                // If registering as Employer, create company first
-                if (normalizedUserType == "Employer")
+
+                if (pending!.UserType == "Employer")
                 {
-                    if (string.IsNullOrWhiteSpace(request.CompanyName))
-                    {
-                        return BadRequest("Company name is required for employer registration");
-                    }
-                    
                     company = new Company
                     {
-                        Name = request.CompanyName,
-                        Description = request.Description ?? string.Empty,
-                        Location = request.Location ?? string.Empty,
-                        Industry = request.Industry ?? string.Empty,
-                        Size = request.CompanySize ?? string.Empty,
-                        Website = request.Website ?? string.Empty,
-                        Email = request.Email
+                        Name        = pending.CompanyName!,
+                        Description = pending.Description ?? string.Empty,
+                        Location    = pending.Location,
+                        Industry    = pending.Industry ?? string.Empty,
+                        Size        = pending.CompanySize ?? string.Empty,
+                        Website     = pending.Website ?? string.Empty,
+                        Email       = pending.Email
                     };
-                    
                     _context.Companies.Add(company);
                     await _context.SaveChangesAsync();
                 }
 
                 var user = new User
                 {
-                    FirstName = request.FirstName,
-                    LastName = request.LastName,
-                    Email = normalizedEmail,
-                    Phone = request.Phone ?? string.Empty,
-                    Location = request.Location ?? string.Empty,
-                    Bio = request.Bio ?? string.Empty,
-                    Skills = request.Skills ?? string.Empty,
-                    Title = request.Title ?? string.Empty,
-                    UserType = normalizedUserType,
-                    CompanyId = company?.Id,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                    FirstName    = pending.FirstName,
+                    LastName     = pending.LastName,
+                    Email        = pending.Email,
+                    Phone        = pending.Phone,
+                    Location     = pending.Location,
+                    Bio          = pending.Bio,
+                    Skills       = pending.Skills,
+                    Title        = pending.Title,
+                    UserType     = pending.UserType,
+                    CompanyId    = company?.Id,
+                    PasswordHash = pending.HashedPassword
                 };
 
                 _context.Users.Add(user);
@@ -100,34 +153,67 @@ namespace RightFitGigs.Controllers
 
                 var response = new UserResponse
                 {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    Phone = user.Phone,
-                    Location = user.Location,
-                    Bio = user.Bio,
-                    Skills = user.Skills,
-                    Title = user.Title,
-                    UserType = user.UserType,
-                    Initials = user.Initials,
+                    Id          = user.Id,
+                    FirstName   = user.FirstName,
+                    LastName    = user.LastName,
+                    Email       = user.Email,
+                    Phone       = user.Phone,
+                    Location    = user.Location,
+                    Bio         = user.Bio,
+                    Skills      = user.Skills,
+                    Title       = user.Title,
+                    UserType    = user.UserType,
+                    Initials    = user.Initials,
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
-                    IsActive = user.IsActive,
-                    IsAdmin = user.IsAdmin
+                    IsActive    = user.IsActive,
+                    IsAdmin     = user.IsAdmin
                 };
 
-                // Fire welcome email (non-blocking)
                 _ = _emailService.SendWelcomeAsync(user.Email, user.FirstName, user.UserType);
 
-                return StatusCode(201, response);
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogInformation("User {Email} verified and created (Id={UserId})", user.Email, user.Id);
+
+                var token = _jwtService.GenerateToken(user);
+                return StatusCode(201, new { token, user = response });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "RegisterVerify failed");
+                return StatusCode(500, "An error occurred during registration. Please try again.");
             }
         }
 
+        // ─── Resend OTP (refreshes code, keeps existing pending data) ─────────
+        [HttpPost("register/resend-otp")]
+        public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
+        {
+            try
+            {
+                var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+                var refreshed = _pendingStore.Refresh(normalizedEmail);
+
+                if (refreshed == null)
+                    return BadRequest(new { error = "No pending registration found. Please fill in the registration form again." });
+
+                _ = _emailService.SendOtpAsync(normalizedEmail, refreshed.FirstName, refreshed.OtpCode);
+
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogInformation("OTP resent for {Email}", normalizedEmail);
+
+                return Ok(new { message = "A new verification code has been sent to your email." });
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "ResendOtp failed");
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet("test-email")]
         public async Task<IActionResult> TestEmail([FromQuery] string to = "grant88271@gmail.com")
         {
@@ -138,7 +224,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = ex.Message, type = ex.GetType().Name });
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "TestEmail failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -187,8 +275,8 @@ namespace RightFitGigs.Controllers
                     IsAdmin = user.IsAdmin
                 };
 
-                // Generate a simple token (in production, use JWT)
-                var token = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{user.Id}:{DateTime.UtcNow.Ticks}"));
+                // Generate a signed JWT
+                var token = _jwtService.GenerateToken(user);
 
                 var response = new
                 {
@@ -200,20 +288,26 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "Login failed");
+                return StatusCode(500, "An error occurred during login. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpGet("user/{id}")]
         public async Task<ActionResult<UserResponse>> GetUser(string id)
         {
             try
             {
+                if (!IsAuthorizedForUser(id))
+                    return Forbid();
+
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
                 
                 if (user == null)
                 {
-                    return NotFound($"User with ID {id} not found");
+                    return NotFound("User not found");
                 }
 
                 var response = new UserResponse
@@ -238,15 +332,21 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "GetUser failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpPut("profile/{id}")]
         public async Task<ActionResult<UserResponse>> UpdateProfile(string id, [FromBody] UpdateProfileRequest request)
         {
             try
             {
+                if (!IsAuthorizedForUser(id))
+                    return Forbid();
+
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
                 
                 if (user == null)
@@ -335,10 +435,13 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "UpdateProfile failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpPost("profile/{id}/resume")]
         public async Task<ActionResult<UserResponse>> UploadResume(string id, [FromBody] ResumeUploadRequest request)
         {
@@ -395,16 +498,22 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "UploadResume failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpPost("profile/{id}/resume/upload")]
         [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<ActionResult<UserResponse>> UploadResumeFile(string id, [FromForm] IFormFile file)
         {
             try
             {
+                if (!IsAuthorizedForUser(id))
+                    return Forbid();
+
                 if (file == null || file.Length == 0)
                     return BadRequest("No file provided");
 
@@ -482,7 +591,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "UploadResumeFile failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -519,7 +630,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "ForgotPassword failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -552,8 +665,22 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "ResetPassword failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
+        }
+
+        // ─── Helpers ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns true if the current JWT belongs to the given userId, or if the caller is an admin.
+        /// </summary>
+        private bool IsAuthorizedForUser(string userId)
+        {
+            var tokenUserId = User.GetUserId();
+            var isAdmin = User.GetIsAdmin();
+            return isAdmin || tokenUserId == userId;
         }
 
         private static string NormalizeUserType(string? userType)
@@ -672,5 +799,23 @@ namespace RightFitGigs.Controllers
         
         [Required]
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class VerifyOtpRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Otp { get; set; } = string.Empty;
+    }
+
+    public class ResendOtpRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
     }
 }

@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
 using RightFitGigs.Models;
+using RightFitGigs.Services;
 
 namespace RightFitGigs.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class NotificationsController : ControllerBase
@@ -25,6 +28,9 @@ namespace RightFitGigs.Controllers
         {
             try
             {
+                if (User.GetUserId() != userId && !User.GetIsAdmin())
+                    return Forbid();
+
                 var query = _context.Notifications
                     .Where(n => n.UserId == userId);
 
@@ -42,7 +48,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<NotificationsController>>();
+                logger.LogError(ex, "GetUserNotifications failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -52,6 +60,9 @@ namespace RightFitGigs.Controllers
         {
             try
             {
+                if (User.GetUserId() != userId && !User.GetIsAdmin())
+                    return Forbid();
+
                 var count = await _context.Notifications
                     .CountAsync(n => n.UserId == userId && !n.IsRead);
 
@@ -59,7 +70,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<NotificationsController>>();
+                logger.LogError(ex, "GetUnreadCount failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -85,7 +98,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<NotificationsController>>();
+                logger.LogError(ex, "MarkAsRead failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -95,6 +110,9 @@ namespace RightFitGigs.Controllers
         {
             try
             {
+                if (User.GetUserId() != userId && !User.GetIsAdmin())
+                    return Forbid();
+
                 var notifications = await _context.Notifications
                     .Where(n => n.UserId == userId && !n.IsRead)
                     .ToListAsync();
@@ -111,7 +129,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<NotificationsController>>();
+                logger.LogError(ex, "MarkAllAsRead failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -128,6 +148,10 @@ namespace RightFitGigs.Controllers
                     return NotFound();
                 }
 
+                // Only the owner may delete their notification
+                if (User.GetUserId() != notification.UserId && !User.GetIsAdmin())
+                    return Forbid();
+
                 _context.Notifications.Remove(notification);
                 await _context.SaveChangesAsync();
 
@@ -135,7 +159,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<NotificationsController>>();
+                logger.LogError(ex, "DeleteNotification failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -145,6 +171,9 @@ namespace RightFitGigs.Controllers
         {
             try
             {
+                if (User.GetUserId() != userId && !User.GetIsAdmin())
+                    return Forbid();
+
                 var notifications = await _context.Notifications
                     .Where(n => n.UserId == userId && n.IsRead)
                     .ToListAsync();
@@ -156,7 +185,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<NotificationsController>>();
+                logger.LogError(ex, "ClearAllNotifications failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
     }

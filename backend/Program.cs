@@ -1,7 +1,10 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using RightFitGigs.Data;
 using RightFitGigs.Models;
@@ -22,6 +25,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<EmailService>();
+builder.Services.AddSingleton<JwtService>();
+builder.Services.AddSingleton<PendingRegistrationStore>();
 
 var frontendUrl = builder.Configuration["FRONTEND_URL"];
 var defaultFrontendUrl = "https://rightfitgigsfrontendr.up.railway.app";
@@ -40,10 +45,10 @@ var allowedOrigins = new[]
 .ToArray();
 
 // Add Entity Framework
-// Railway provides DATABASE_URL, fallback to connection string
+// Set DATABASE_URL environment variable (Railway) or DefaultConnection in appsettings.json
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Host=hopper.proxy.rlwy.net;Port=33137;Database=railway;Username=postgres;Password=bKnpjKnCKoqpuWyTjTziZxfNtceZRXIs";
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("No database connection string configured. Set DATABASE_URL or DefaultConnection.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -65,6 +70,32 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add JWT Authentication
+var jwtSecret = builder.Configuration["JWT_SECRET"]
+    ?? "RFG_Dev_Only_Secret_Key_Must_Be_At_Least_32_Characters_Long!";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = true,
+            ValidIssuer = "rightfitgigs",
+            ValidateAudience = true,
+            ValidAudience = "rightfitgigs",
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    // AdminOnly: token must contain isAdmin=true claim
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireClaim("isAdmin", "true"));
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -79,6 +110,9 @@ if (app.Environment.IsDevelopment())
 
 // CORS must come before static files and routing
 app.UseCors("AllowAll");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseStaticFiles(); // Enable static file serving
 
@@ -101,8 +135,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(resumesPath),
     RequestPath = "/uploads/resumes"
 });
-
-app.UseAuthorization();
 
 // Health check endpoint for Railway
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));

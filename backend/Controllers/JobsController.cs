@@ -117,7 +117,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -158,7 +158,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -217,7 +217,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -258,7 +258,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -284,7 +284,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -313,7 +313,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -333,7 +333,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -353,7 +353,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
     }

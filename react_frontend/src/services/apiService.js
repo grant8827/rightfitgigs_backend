@@ -25,6 +25,34 @@ const apiClient = axios.create({
   },
 });
 
+// Attach JWT from localStorage to every request
+apiClient.interceptors.request.use((config) => {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user?.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
+  } catch {
+    // Ignore parse errors — request proceeds unauthenticated
+  }
+  return config;
+});
+
+// Log 401s clearly in dev without leaking error details in prod
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is missing or expired — clear stale session
+      localStorage.removeItem('user');
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Stats API
 export const getPlatformStats = async () => {
   const response = await apiClient.get('/stats');
@@ -232,21 +260,25 @@ export const getWorker = async (id) => {
 };
 
 export const registerWorker = async (workerData) => {
-  const data = {
-    ...workerData,
-    userType: 'Worker',
-  };
-  const response = await apiClient.post('/auth/register', data);
+  const data = { ...workerData, userType: 'Worker' };
+  const response = await apiClient.post('/auth/register/initiate', data);
   return response.data;
 };
 
 // Employer API
 export const registerEmployer = async (employerData) => {
-  const data = {
-    ...employerData,
-    userType: 'Employer',
-  };
-  const response = await apiClient.post('/auth/register', data);
+  const data = { ...employerData, userType: 'Employer' };
+  const response = await apiClient.post('/auth/register/initiate', data);
+  return response.data;
+};
+
+export const verifyRegistrationOtp = async (email, otp) => {
+  const response = await apiClient.post('/auth/register/verify', { email, otp });
+  return response.data;
+};
+
+export const resendRegistrationOtp = async (email) => {
+  const response = await apiClient.post('/auth/register/resend-otp', { email });
   return response.data;
 };
 

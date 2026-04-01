@@ -200,6 +200,30 @@ namespace RightFitGigs.DTOs
         public string Password { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Returned for public-facing worker browse endpoints. Does NOT include email or phone.
+    /// </summary>
+    public class PublicWorkerResponse
+    {
+        public string Id { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
+        public string Skills { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string UserType { get; set; } = string.Empty;
+        public string Initials { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+        public bool IsActive { get; set; }
+        public string? ResumeUrl { get; set; }
+        public string? DesiredJobTitle { get; set; }
+        public string? DesiredJobType { get; set; }
+        public string? DesiredExperienceLevel { get; set; }
+        public bool OpenToRemote { get; set; }
+        public string? EducationLevel { get; set; }
+    }
+
     public class ForgotPasswordRequest
     {
         [Required]

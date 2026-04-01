@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
 using RightFitGigs.DTOs;
 using RightFitGigs.Models;
+using RightFitGigs.Services;
 
 namespace RightFitGigs.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class MessagesController : ControllerBase
@@ -106,7 +109,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "SendMessage failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -144,7 +149,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "GetMessage failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -186,7 +193,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "GetConversationMessages failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -195,6 +204,9 @@ namespace RightFitGigs.Controllers
         {
             try
             {
+                // Users may only view their own conversations
+                if (User.GetUserId() != userId && !User.GetIsAdmin())
+                    return Forbid();
                 var conversations = await _context.Messages
                     .Where(m => m.SenderId == userId || m.ReceiverId == userId)
                     .GroupBy(m => m.ConversationId)
@@ -236,7 +248,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "GetUserConversations failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -263,7 +277,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "MarkMessageAsRead failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -272,6 +288,9 @@ namespace RightFitGigs.Controllers
         {
             try
             {
+                // Users may only mark their own messages as read
+                if (User.GetUserId() != userId && !User.GetIsAdmin())
+                    return Forbid();
                 var unreadMessages = await _context.Messages
                     .Where(m => m.ConversationId == conversationId && m.ReceiverId == userId && !m.IsRead)
                     .ToListAsync();
@@ -287,7 +306,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "MarkConversationAsRead failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
@@ -310,7 +331,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<MessagesController>>();
+                logger.LogError(ex, "DeleteMessage failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
     }

@@ -1,0 +1,207 @@
+/* OTP Verification Step */
+
+.otp-step {
+  text-align: center;
+  padding: 1rem 0;
+  animation: otp-fade-in 0.3s ease;
+}
+
+@keyframes otp-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.otp-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.otp-step h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.otp-subtitle {
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 2rem;
+}
+
+.otp-subtitle strong {
+  color: #111827;
+}
+
+/* ── 6-Box input ──────────────────────────────────── */
+.otp-boxes {
+  display: flex;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-bottom: 1.25rem;
+}
+
+.otp-box {
+  width: 48px;
+  height: 56px;
+  border: 2px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #111827;
+  background: #fafafa;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  outline: none;
+  caret-color: transparent;
+}
+
+.otp-box:focus {
+  border-color: #4f46e5;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.otp-box--filled {
+  background: white;
+  border-color: #4f46e5;
+}
+
+.otp-box--error,
+.otp-box--error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.otp-box:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Messages ─────────────────────────────────────── */
+.otp-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin: 0 0 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 0.5rem 0.875rem;
+}
+
+.otp-resend-msg {
+  color: #059669;
+  font-size: 0.875rem;
+  margin: 0 0 1rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 0.5rem 0.875rem;
+}
+
+/* ── Submit button ────────────────────────────────── */
+.otp-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, #4f46e5, #14b8a6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  margin-bottom: 1.5rem;
+}
+
+.otp-submit-btn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.otp-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.otp-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: otp-spin 0.7s linear infinite;
+}
+
+@keyframes otp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Footer links ─────────────────────────────────── */
+.otp-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.otp-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.otp-resend-btn,
+.otp-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.otp-resend-btn {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.otp-resend-btn:hover:not(:disabled) {
+  color: #3730a3;
+}
+
+.otp-resend-btn:disabled {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.otp-back-btn {
+  color: #6b7280;
+}
+
+.otp-back-btn:hover:not(:disabled) {
+  color: #374151;
+}
+
+.otp-expires-note {
+  color: #9ca3af !important;
+  font-size: 0.8rem !important;
+}
+
+@media (max-width: 400px) {
+  .otp-box {
+    width: 40px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+
+  .otp-boxes {
+    gap: 0.4rem;
+  }
+}

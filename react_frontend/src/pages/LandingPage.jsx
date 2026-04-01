@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getPlatformStats, getJobs } from '../services/apiService';
 import Navbar from '../components/Navbar';
 import AdRenderer from '../components/AdRenderer';
@@ -387,9 +387,13 @@ const LandingPage = () => {
             <a href="/hiring">Find Talent</a>
           </div>
           <div className="footer-section">
-            <h5>Company</h5>
-            <a href="#">About Us</a>
-            <a href="#">Contact</a>
+            <h5>Legal</h5>
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/terms-of-service">Terms of Service</Link>
+          </div>
+          <div className="footer-section">
+            <h5>Support</h5>
+            <Link to="/contact">Contact Us</Link>
           </div>
         </div>
         <div className="footer-bottom">

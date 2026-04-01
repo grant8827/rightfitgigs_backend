@@ -16,6 +16,9 @@ import AdminWorkersPage from './pages/AdminWorkersPage';
 import AdminEmployersPage from './pages/AdminEmployersPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import ContactPage from './pages/ContactPage';
 import './App.css';
 
 // Protected Route Component
@@ -51,6 +54,9 @@ function App() {
             <Route path="/hiring" element={<HiringPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+            <Route path="/contact" element={<ContactPage />} />
             
             <Route
               path="/worker-dashboard"

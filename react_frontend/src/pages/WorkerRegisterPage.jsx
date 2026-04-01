@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerWorker } from '../services/apiService';
+import { registerWorker, verifyRegistrationOtp, resendRegistrationOtp } from '../services/apiService';
+import { useAuth } from '../hooks/useAuth';
 import Navbar from '../components/Navbar';
+import OtpVerificationStep from '../components/OtpVerificationStep';
 import './WorkerRegisterPage.css';
 
 const WorkerRegisterPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [otpEmail, setOtpEmail] = useState(null); // null = form step, string = OTP step
+  const [savedData, setSavedData] = useState(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -48,22 +53,32 @@ const WorkerRegisterPage = () => {
 
     try {
       const { confirmPassword: _confirmPassword, ...registrationData } = formData;
-      // Normalize email before sending
       registrationData.email = registrationData.email.trim().toLowerCase();
       await registerWorker(registrationData);
-      
-      // Show success message and redirect
-      alert('Registration successful! Please login to continue.');
-      navigate('/login');
+      // Switch to OTP step
+      setSavedData(registrationData);
+      setOtpEmail(registrationData.email);
     } catch (err) {
       if (err.response?.status === 409) {
         setError('An account with this email already exists. Please use a different email or login.');
       } else {
-        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        setError(err.response?.data?.message || err.response?.data || 'Registration failed. Please try again.');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifyOtp = async (otp) => {
+    const data = await verifyRegistrationOtp(otpEmail, otp);
+    login(data); // { token, user } — same shape as loginUser() response
+    const user = data?.user ?? data;
+    navigate(user?.userType?.toLowerCase() === 'worker' ? '/worker-dashboard' : '/');
+  };
+
+  const handleResendOtp = async () => {
+    // Re-call initiate with the saved data to get a fresh code
+    await registerWorker(savedData);
   };
 
   return (
@@ -116,13 +131,22 @@ const WorkerRegisterPage = () => {
             </div>
           </div>
 
-          {/* Right Side - Form */}
+          {/* Right Side - Form or OTP */}
           <div className="register-form-section">
             <div className="form-wrapper">
-              <h2>Create Your Account</h2>
-              <p className="form-subtitle">Start finding your perfect gig today</p>
+              {otpEmail ? (
+                <OtpVerificationStep
+                  email={otpEmail}
+                  onVerify={handleVerifyOtp}
+                  onResend={handleResendOtp}
+                  onBack={() => { setOtpEmail(null); setError(''); }}
+                />
+              ) : (
+                <>
+                  <h2>Create Your Account</h2>
+                  <p className="form-subtitle">Start finding your perfect gig today</p>
 
-              {error && <div className="error-message">{error}</div>}
+                  {error && <div className="error-message">{error}</div>}
 
               <form onSubmit={handleSubmit} className="worker-register-form">
                 <div className="form-row">
@@ -258,14 +282,16 @@ const WorkerRegisterPage = () => {
                 </button>
 
                 <div className="form-footer">
-                  <p>
-                    Already have an account? <Link to="/login">Sign in here</Link>
-                  </p>
-                  <p>
-                    Looking to hire? <Link to="/register/employer">Register as Employer</Link>
-                  </p>
-                </div>
-              </form>
+                    <p>
+                      Already have an account? <Link to="/login">Sign in here</Link>
+                    </p>
+                    <p>
+                      Looking to hire? <Link to="/register/employer">Register as Employer</Link>
+                    </p>
+                  </div>
+                </form>
+              </>
+              )}
             </div>
           </div>
         </div>

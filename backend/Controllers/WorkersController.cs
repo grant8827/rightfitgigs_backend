@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
 using RightFitGigs.DTOs;
 using RightFitGigs.Models;
+using RightFitGigs.Services;
 
 namespace RightFitGigs.Controllers
 {
@@ -18,7 +20,7 @@ namespace RightFitGigs.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserResponse>>> GetAllWorkers([FromQuery] string? search = null, [FromQuery] string? location = null)
+        public async Task<ActionResult<IEnumerable<PublicWorkerResponse>>> GetAllWorkers([FromQuery] string? search = null, [FromQuery] string? location = null)
         {
             try
             {
@@ -45,13 +47,11 @@ namespace RightFitGigs.Controllers
                     .ThenBy(u => u.LastName)
                     .ToListAsync();
 
-                var response = workers.Select(w => new UserResponse
+                var response = workers.Select(w => new PublicWorkerResponse
                 {
                     Id = w.Id,
                     FirstName = w.FirstName,
                     LastName = w.LastName,
-                    Email = w.Email,
-                    Phone = w.Phone,
                     Location = w.Location,
                     Bio = w.Bio,
                     Skills = w.Skills,
@@ -59,20 +59,27 @@ namespace RightFitGigs.Controllers
                     UserType = w.UserType,
                     Initials = w.Initials,
                     CreatedDate = w.CreatedDate,
-                    UpdatedDate = w.UpdatedDate,
-                    IsActive = w.IsActive
+                    IsActive = w.IsActive,
+                    ResumeUrl = w.ResumeUrl,
+                    DesiredJobTitle = w.DesiredJobTitle,
+                    DesiredJobType = w.DesiredJobType,
+                    DesiredExperienceLevel = w.DesiredExperienceLevel,
+                    OpenToRemote = w.OpenToRemote,
+                    EducationLevel = w.EducationLevel
                 }).ToList();
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<WorkersController>>();
+                logger.LogError(ex, "GetAllWorkers failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserResponse>> GetWorker(string id)
+        public async Task<ActionResult<PublicWorkerResponse>> GetWorker(string id)
         {
             try
             {
@@ -80,16 +87,14 @@ namespace RightFitGigs.Controllers
                 
                 if (worker == null)
                 {
-                    return NotFound($"Worker with ID {id} not found");
+                    return NotFound("Worker not found");
                 }
 
-                var response = new UserResponse
+                var response = new PublicWorkerResponse
                 {
                     Id = worker.Id,
                     FirstName = worker.FirstName,
                     LastName = worker.LastName,
-                    Email = worker.Email,
-                    Phone = worker.Phone,
                     Location = worker.Location,
                     Bio = worker.Bio,
                     Skills = worker.Skills,
@@ -97,18 +102,26 @@ namespace RightFitGigs.Controllers
                     UserType = worker.UserType,
                     Initials = worker.Initials,
                     CreatedDate = worker.CreatedDate,
-                    UpdatedDate = worker.UpdatedDate,
-                    IsActive = worker.IsActive
+                    IsActive = worker.IsActive,
+                    ResumeUrl = worker.ResumeUrl,
+                    DesiredJobTitle = worker.DesiredJobTitle,
+                    DesiredJobType = worker.DesiredJobType,
+                    DesiredExperienceLevel = worker.DesiredExperienceLevel,
+                    OpenToRemote = worker.OpenToRemote,
+                    EducationLevel = worker.EducationLevel
                 };
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<WorkersController>>();
+                logger.LogError(ex, "GetWorker failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<UserResponse>> CreateWorker([FromBody] UserRequest request)
         {
@@ -165,10 +178,13 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<WorkersController>>();
+                logger.LogError(ex, "CreateWorker failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateWorker(string id, [FromBody] UserRequest request)
         {
@@ -212,10 +228,13 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<WorkersController>>();
+                logger.LogError(ex, "UpdateWorker failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWorker(string id)
         {
@@ -238,7 +257,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<WorkersController>>();
+                logger.LogError(ex, "DeleteWorker failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
     }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RightFitGigs.Data;
@@ -20,6 +21,7 @@ namespace RightFitGigs.Controllers
             _emailService = emailService;
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<ApplicationResponse>> SubmitApplication([FromBody] ApplicationRequest request)
         {
@@ -29,6 +31,11 @@ namespace RightFitGigs.Controllers
                 {
                     return BadRequest(ModelState);
                 }
+
+                // Validate the submitting worker matches the token
+                var tokenUserId = User.GetUserId();
+                if (tokenUserId != request.WorkerId && !User.GetIsAdmin())
+                    return Forbid();
 
                 // Check if user already applied for this job
                 var existingApplication = await _context.Applications
@@ -119,15 +126,21 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "SubmitApplication failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetAllApplications()
         {
             try
             {
+                // Only admins may view all applications
+                if (!User.GetIsAdmin())
+                    return Forbid();
                 var applications = await _context.Applications
                     .Include(a => a.Job)
                     .OrderByDescending(a => a.AppliedDate)
@@ -157,10 +170,13 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "GetAllApplications failed");
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<ApplicationResponse>> GetApplication(string id)
         {
@@ -172,8 +188,17 @@ namespace RightFitGigs.Controllers
                 
                 if (application == null)
                 {
-                    return NotFound($"Application with ID {id} not found");
+                    return NotFound("Application not found");
                 }
+
+                // Only the worker who applied, the employer who owns the job, or admin may view
+                var tokenUserId = User.GetUserId();
+                var isAdmin = User.GetIsAdmin();
+                var ownsJob = application.Job != null && await _context.Users
+                    .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId);
+
+                if (!isAdmin && tokenUserId != application.WorkerId && !ownsJob)
+                    return Forbid();
 
                 var response = new ApplicationResponse
                 {
@@ -199,15 +224,22 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "GetApplication failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpGet("worker/{workerId}")]
         public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetWorkerApplications(string workerId)
         {
             try
             {
+                // Workers may only view their own applications; admins may view any
+                var tokenUserId = User.GetUserId();
+                if (tokenUserId != workerId && !User.GetIsAdmin())
+                    return Forbid();
                 var applications = await _context.Applications
                     .Include(a => a.Job)
                     .Where(a => a.WorkerId == workerId)
@@ -238,15 +270,29 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "GetWorkerApplications failed for workerId {WorkerId}", workerId);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpGet("job/{jobId}")]
         public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetJobApplications(string jobId)
         {
             try
             {
+                // Only the employer who owns the job, or admin, may view applicants
+                var tokenUserId = User.GetUserId();
+                var isAdmin = User.GetIsAdmin();
+                var job = await _context.Jobs.FindAsync(jobId);
+                if (job == null) return NotFound("Job not found");
+
+                var ownsJob = await _context.Users
+                    .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == job.CompanyId);
+
+                if (!isAdmin && !ownsJob)
+                    return Forbid();
                 var applications = await _context.Applications
                     .Include(a => a.Job)
                     .Where(a => a.JobId == jobId)
@@ -277,10 +323,13 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "GetJobApplications failed for jobId {JobId}", jobId);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 
+        [Authorize]
         [HttpPut("{id}/status")]
         public async Task<ActionResult<ApplicationResponse>> UpdateApplicationStatus(
             string id, 
@@ -299,8 +348,17 @@ namespace RightFitGigs.Controllers
                 
                 if (application == null)
                 {
-                    return NotFound($"Application with ID {id} not found");
+                    return NotFound("Application not found");
                 }
+
+                // Only the employer who owns the job, or admin, may change status
+                var tokenUserId = User.GetUserId();
+                var isAdmin = User.GetIsAdmin();
+                var ownsJob = application.Job != null && await _context.Users
+                    .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId);
+
+                if (!isAdmin && !ownsJob)
+                    return Forbid();
 
                 application.Status = request.Status;
                 application.UpdatedDate = DateTime.UtcNow;
@@ -376,7 +434,9 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "UpdateApplicationStatus failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
     }

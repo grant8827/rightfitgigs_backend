@@ -95,6 +95,38 @@ namespace RightFitGigs.Services
             }
         }
 
+        // ─── OTP Verification Email ───────────────────────────────────────────
+
+        public async Task SendOtpAsync(string email, string firstName, string otp)
+        {
+            var html = $@"
+<div style='font-family:sans-serif;max-width:560px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
+  <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
+    <h1 style='color:white;margin:0;font-size:1.6rem;'>Verify Your Email</h1>
+  </div>
+  <div style='padding:2rem;'>
+    <p style='font-size:1rem;color:#374151;'>Hi <strong>{firstName}</strong>,</p>
+    <p style='color:#6b7280;line-height:1.7;margin-bottom:1.5rem;'>
+      Enter the 6-digit code below to complete your RightFitGigs registration.
+      This code expires in <strong>10 minutes</strong>.
+    </p>
+    <div style='text-align:center;margin:2rem 0;'>
+      <div style='display:inline-block;background:white;border:2px solid #4f46e5;border-radius:12px;padding:1.25rem 2.5rem;'>
+        <span style='font-size:2.5rem;font-weight:800;letter-spacing:0.4rem;color:#4f46e5;font-family:monospace;'>{otp}</span>
+      </div>
+    </div>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;'>
+      If you didn't request this, you can safely ignore this email.
+    </p>
+    <p style='color:#9ca3af;font-size:0.85rem;text-align:center;margin-top:2rem;'>
+      RightFitGigs &mdash; Connecting talent with opportunity
+    </p>
+  </div>
+</div>";
+
+            await SendAsync(email, firstName, "Your RightFitGigs verification code", html);
+        }
+
         // ─── Welcome Email ────────────────────────────────────────────────────
 
         public async Task SendWelcomeAsync(string email, string firstName, string userType)
