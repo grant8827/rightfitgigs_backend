@@ -102,7 +102,7 @@ namespace RightFitGigs.Services
             var html = $@"
 <div style='font-family:sans-serif;max-width:560px;margin:auto;background:#f9fafb;border-radius:12px;overflow:hidden;'>
   <div style='background:linear-gradient(135deg,#4f46e5,#14b8a6);padding:2rem;text-align:center;'>
-    <h1 style='color:white;margin:0;font-size:1.6rem;'>Verify Your Email</h1>
+    <h1 style='color:black;margin:0;font-size:1.6rem;'>Verify Your Email</h1>
   </div>
   <div style='padding:2rem;'>
     <p style='font-size:1rem;color:#374151;'>Hi <strong>{firstName}</strong>,</p>
