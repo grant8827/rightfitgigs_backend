@@ -88,6 +88,10 @@ const PrivacyPolicyPage = () => {
               However, no method of transmission over the internet is 100% secure. While we strive to protect your information,
               we cannot guarantee absolute security.
             </p>
+            <p> <b>Security Alert:</b> To ensure your safety, please protect your personal information by never sharing sensitive data—such as your bank account details, ID numbers, or SSN/TRN, 
+                until you have successfully completed an interview and been formally accepted for a position.
+                 Always verify that a business is legitimate before attending an interview to ensure you can speak confidently and avoid any uncertainty. 
+                 If your interview is conducted remotely, insist on a video conference so that you can clearly see and verify your interviewer before proceeding with any professional engagement.</p>
           </section>
 
           <section className="legal-section">
