@@ -117,8 +117,7 @@ namespace RightFitGigs.Controllers
             }
             catch (Exception ex)
             {
-                // TEMP DEBUG - remove after diagnosing production issue
-                return StatusCode(500, new { error = ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.Message });
+                return StatusCode(500, "An error occurred. Please try again.");
             }
         }
 

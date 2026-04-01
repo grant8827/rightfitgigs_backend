@@ -46,9 +46,10 @@ var allowedOrigins = new[]
 
 // Add Entity Framework
 // Set DATABASE_URL environment variable (Railway) or DefaultConnection in appsettings.json
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("No database connection string configured. Set DATABASE_URL or DefaultConnection.");
+var connectionString =
+    (Environment.GetEnvironmentVariable("DATABASE_URL") is string dbUrl && !string.IsNullOrWhiteSpace(dbUrl) ? dbUrl : null)
+    ?? (builder.Configuration.GetConnectionString("DefaultConnection") is string dbConn && !string.IsNullOrWhiteSpace(dbConn) ? dbConn : null)
+    ?? throw new InvalidOperationException("No database connection string configured. Set the DATABASE_URL environment variable in Railway.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
