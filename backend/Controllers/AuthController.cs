@@ -290,7 +290,7 @@ namespace RightFitGigs.Controllers
             {
                 var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
                 logger.LogError(ex, "Login failed");
-                return StatusCode(500, "An error occurred during login. Please try again.");
+                return StatusCode(500, new { error = ex.Message, type = ex.GetType().Name, inner = ex.InnerException?.Message });
             }
         }
 
