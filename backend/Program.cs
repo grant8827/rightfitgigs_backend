@@ -46,10 +46,29 @@ var allowedOrigins = new[]
 
 // Add Entity Framework
 // Set DATABASE_URL environment variable (Railway) or DefaultConnection in appsettings.json
-var connectionString =
+var rawConnectionString =
     (Environment.GetEnvironmentVariable("DATABASE_URL") is string dbUrl && !string.IsNullOrWhiteSpace(dbUrl) ? dbUrl : null)
     ?? (builder.Configuration.GetConnectionString("DefaultConnection") is string dbConn && !string.IsNullOrWhiteSpace(dbConn) ? dbConn : null)
     ?? throw new InvalidOperationException("No database connection string configured. Set the DATABASE_URL environment variable in Railway.");
+
+// Convert PostgreSQL URI format (postgresql://user:pass@host:port/db) to Npgsql key-value format
+static string ConvertPostgresUrl(string url)
+{
+    if (!url.StartsWith("postgres://") && !url.StartsWith("postgresql://"))
+        return url; // already in key-value format
+
+    var uri = new Uri(url);
+    var userInfo = uri.UserInfo.Split(':');
+    var username = Uri.UnescapeDataString(userInfo[0]);
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+    var host = uri.Host;
+    var port = uri.Port > 0 ? uri.Port : 5432;
+    var database = uri.AbsolutePath.TrimStart('/');
+
+    return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+var connectionString = ConvertPostgresUrl(rawConnectionString);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
