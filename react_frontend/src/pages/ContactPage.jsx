@@ -35,7 +35,7 @@ export default function ContactPage() {
     setStatus('loading');
     setErrorMsg('');
     try {
-      const res = await api.post('/contact', {
+      await api.post('/contact', {
         name: form.name.trim(),
         email: form.email.trim(),
         subject: form.subject.trim(),
