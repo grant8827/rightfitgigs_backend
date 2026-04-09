@@ -29,10 +29,37 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
   List<Application> _applications = [];
   bool _isLoadingApplications = false;
 
+  // Company profile
+  final _companyNameCtrl = TextEditingController();
+  final _industryCtrl = TextEditingController();
+  final _companySizeCtrl = TextEditingController();
+  final _websiteCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
+  final _contactEmailCtrl = TextEditingController();
+  bool _isLoadingProfile = false;
+  bool _isSavingProfile = false;
+  String _profileError = '';
+  bool _profileSaved = false;
+
   @override
   void initState() {
     super.initState();
     _loadJobs();
+    _loadAllApplications();
+    _loadCompanyProfile();
+  }
+
+  @override
+  void dispose() {
+    _companyNameCtrl.dispose();
+    _industryCtrl.dispose();
+    _companySizeCtrl.dispose();
+    _websiteCtrl.dispose();
+    _locationCtrl.dispose();
+    _descriptionCtrl.dispose();
+    _contactEmailCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadJobs() async {
@@ -54,6 +81,56 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadCompanyProfile() async {
+    setState(() => _isLoadingProfile = true);
+    try {
+      final data = await ApiService.getCompanyProfile(widget.employerId);
+      if (mounted) {
+        _companyNameCtrl.text = data['companyName'] ?? '';
+        _industryCtrl.text = data['industry'] ?? '';
+        _companySizeCtrl.text = data['companySize'] ?? '';
+        _websiteCtrl.text = data['website'] ?? '';
+        _locationCtrl.text = data['location'] ?? '';
+        _descriptionCtrl.text = data['description'] ?? '';
+        _contactEmailCtrl.text = data['contactEmail'] ?? '';
+      }
+    } catch (_) {
+      // Non-fatal — profile fields start empty
+    } finally {
+      if (mounted) setState(() => _isLoadingProfile = false);
+    }
+  }
+
+  Future<void> _saveCompanyProfile() async {
+    setState(() {
+      _isSavingProfile = true;
+      _profileError = '';
+      _profileSaved = false;
+    });
+    try {
+      await ApiService.updateCompanyProfile(widget.employerId, {
+        'companyName': _companyNameCtrl.text.trim(),
+        'industry': _industryCtrl.text.trim(),
+        'companySize': _companySizeCtrl.text.trim(),
+        'website': _websiteCtrl.text.trim(),
+        'location': _locationCtrl.text.trim(),
+        'description': _descriptionCtrl.text.trim(),
+        'contactEmail': _contactEmailCtrl.text.trim(),
+      });
+      if (mounted) setState(() { _profileSaved = true; _isSavingProfile = false; });
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _profileSaved = false);
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _profileError = 'Failed to save profile. Please try again.';
+          _isSavingProfile = false;
+        });
+      }
     }
   }
 
@@ -261,18 +338,58 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadJobs),
         ],
       ),
-      body: Column(
+      body: IndexedStack(
+        index: _selectedIndex,
         children: [
-          // Welcome Header
+          _buildHomeTab(),
+          _buildJobsTab(),
+          _buildCandidatesTab(),
+          _buildMessagesTab(),
+          _buildProfileTab(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        selectedItemColor: Colors.green,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Candidates'),
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
+          BottomNavigationBarItem(icon: Icon(Icons.business), label: 'Profile'),
+        ],
+      ),
+    );
+  }
+
+  // ─── Home Tab ──────────────────────────────────────────────────────────────
+  Widget _buildHomeTab() {
+    final activeJobs = _jobs.where((j) => j.isActive).length;
+    final totalJobs = _jobs.length;
+    final totalApplicants = _applications.length;
+    final shortlisted = _applications
+        .where((a) => a.status == 'Shortlisted' || a.status == 'Accepted')
+        .length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Welcome banner
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.green.shade50, Colors.white],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [Colors.green.shade500, Colors.green.shade800],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,49 +397,254 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                 Text(
                   'Welcome back, ${widget.employerName}!',
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Manage your job postings and find the right candidates.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                const SizedBox(height: 6),
+                const Text(
+                  'Here\'s your hiring overview.',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 24),
 
-          // Tab Navigator
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                _buildJobsTab(),
-                _buildCandidatesTab(),
-                _buildMessagesTab(),
-              ],
+          // Stats grid
+          const Text(
+            'Overview',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.5,
+            children: [
+              _buildStatCard(
+                  'Active Jobs', activeJobs.toString(), Icons.work, Colors.green),
+              _buildStatCard(
+                  'Total Jobs', totalJobs.toString(), Icons.list_alt, Colors.blue),
+              _buildStatCard(
+                  'Total Applicants',
+                  totalApplicants.toString(),
+                  Icons.people,
+                  Colors.orange),
+              _buildStatCard(
+                  'Shortlisted',
+                  shortlisted.toString(),
+                  Icons.star,
+                  Colors.purple),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Quick actions
+          const Text(
+            'Quick Actions',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AddJobPage(employerName: widget.employerName),
+                      ),
+                    );
+                    if (result == true) _loadJobs();
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Post a Job'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => setState(() => _selectedIndex = 2),
+                  icon: const Icon(Icons.people),
+                  label: const Text('View Candidates'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Recent applicants
+          if (_applications.isNotEmpty) ...[
+            const Text(
+              'Recent Applicants',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            ..._applications.take(3).map(
+                  (app) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.green.shade100,
+                        child: Text(
+                          app.workerName.isNotEmpty ? app.workerName[0] : '?',
+                          style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      title: Text(app.workerName),
+                      subtitle: Text('Applied for: ${app.jobTitle}'),
+                      trailing: Chip(
+                        label: Text(
+                          app.status,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11),
+                        ),
+                        backgroundColor: _getStatusColor(app.status),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onTap: () => _showApplicantProfile(app),
+                    ),
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── Profile Tab ───────────────────────────────────────────────────────────
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Company Profile',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Update your company information visible to job seekers.',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 24),
+          if (_isLoadingProfile)
+            const Center(child: CircularProgressIndicator()),
+          if (_profileError.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Text(_profileError,
+                  style: const TextStyle(color: Colors.red)),
+            ),
+          if (_profileSaved)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Company profile saved!',
+                      style: TextStyle(color: Colors.green)),
+                ],
+              ),
+            ),
+          _buildProfileField('Company Name', _companyNameCtrl),
+          _buildProfileField('Industry', _industryCtrl),
+          _buildProfileField(
+            'Company Size',
+            _companySizeCtrl,
+            hint: 'e.g. 1-10, 11-50, 51-200',
+          ),
+          _buildProfileField(
+            'Website',
+            _websiteCtrl,
+            hint: 'https://yourcompany.com',
+          ),
+          _buildProfileField('Location', _locationCtrl),
+          _buildProfileField('Description', _descriptionCtrl, maxLines: 4),
+          _buildProfileField(
+            'Contact Email',
+            _contactEmailCtrl,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSavingProfile ? null : _saveCompanyProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _isSavingProfile
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save Profile',
+                      style: TextStyle(fontSize: 16)),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        selectedItemColor: Colors.green,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Candidates',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
-        ],
+    );
+  }
+
+  Widget _buildProfileField(
+    String label,
+    TextEditingController ctrl, {
+    String? hint,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: ctrl,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
       ),
     );
   }

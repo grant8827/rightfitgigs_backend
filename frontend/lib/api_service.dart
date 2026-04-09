@@ -1100,6 +1100,38 @@ class ApiService {
     }
   }
 
+  // ─── Company Profile ────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> getCompanyProfile(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/company/$userId'),
+        headers: await _authHeaders(),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      throw Exception('Failed to load company profile');
+    } catch (e) {
+      throw Exception('Failed to load company profile: $e');
+    }
+  }
+
+  static Future<void> updateCompanyProfile(
+    String userId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/auth/company/$userId'),
+        headers: await _authHeaders(),
+        body: jsonEncode(data),
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update company profile');
+      }
+    } catch (e) {
+      throw Exception('Failed to update company profile: $e');
+    }
+  }
+
   // ─── Contact ───────────────────────────────────────────────────────────────
   static Future<void> sendContactMessage({
     required String name,
