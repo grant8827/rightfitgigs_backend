@@ -32,6 +32,8 @@ const WorkerDashboard = () => {
       getUser(user.id)
         .then((fullProfile) => updateUser(fullProfile))
         .catch((err) => console.error('Failed to re-hydrate profile:', err?.response?.status, err?.response?.data || err?.message));
+      // Pre-load applications so the home tab stats are correct immediately
+      fetchApplications();
     }
   }, []);
 
@@ -257,40 +259,44 @@ const WorkerDashboard = () => {
             <div className="stats-cards">
               <div className="stat-card">
                 <div className="stat-icon">📝</div>
-                <div className="stat-value">5</div>
+                <div className="stat-value">{applications.length}</div>
                 <div className="stat-label">Applications</div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">📅</div>
-                <div className="stat-value">2</div>
+                <div className="stat-value">{applications.filter(a => a.status === 'Interview').length}</div>
                 <div className="stat-label">Interviews</div>
               </div>
               <div className="stat-card">
-                <div className="stat-icon">💬</div>
-                <div className="stat-value">3</div>
-                <div className="stat-label">Messages</div>
+                <div className="stat-icon">✅</div>
+                <div className="stat-value">{applications.filter(a => a.status === 'Shortlisted').length}</div>
+                <div className="stat-label">Shortlisted</div>
               </div>
             </div>
 
             <div className="section">
               <h3>Recent Activity</h3>
               <div className="activity-list">
-                <div className="activity-item">
-                  <div className="activity-icon sent">📤</div>
-                  <div className="activity-details">
-                    <div className="activity-title">Application Submitted</div>
-                    <div className="activity-subtitle">Software Developer at TechCorp</div>
-                    <div className="activity-time">2 hours ago</div>
+                {applications.length === 0 ? (
+                  <div className="activity-item">
+                    <div className="activity-details">
+                      <div className="activity-subtitle">No applications yet. Start applying!</div>
+                    </div>
                   </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-icon success">✅</div>
-                  <div className="activity-details">
-                    <div className="activity-title">Interview Scheduled</div>
-                    <div className="activity-subtitle">Frontend Developer at StartupXYZ</div>
-                    <div className="activity-time">1 day ago</div>
-                  </div>
-                </div>
+                ) : (
+                  applications.slice(0, 3).map((app) => (
+                    <div className="activity-item" key={app.id}>
+                      <div className={`activity-icon ${app.status === 'Interview' ? 'success' : 'sent'}`}>
+                        {app.status === 'Interview' ? '📅' : app.status === 'Shortlisted' ? '✅' : app.status === 'Rejected' ? '❌' : '📤'}
+                      </div>
+                      <div className="activity-details">
+                        <div className="activity-title">{app.jobTitle}</div>
+                        <div className="activity-subtitle">{app.company} • <span style={{fontWeight:500}}>{app.status}</span></div>
+                        <div className="activity-time">{new Date(app.appliedDate).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
