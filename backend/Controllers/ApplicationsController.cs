@@ -60,6 +60,25 @@ namespace RightFitGigs.Controllers
                     return NotFound("Job not found");
                 }
 
+                // Prefer the dedicated Resume table; fall back to the Users column
+                var resumeUrl = worker.ResumeUrl;
+                if (string.IsNullOrEmpty(resumeUrl))
+                {
+                    try
+                    {
+                        var conn = _context.Database.GetDbConnection();
+                        if (conn.State != System.Data.ConnectionState.Open)
+                            await ((System.Data.Common.DbConnection)conn).OpenAsync();
+                        using var cmd = (System.Data.Common.DbCommand)conn.CreateCommand();
+                        cmd.CommandText = @"SELECT ""FileUrl"" FROM ""Resume"" WHERE ""UserId""=@uid LIMIT 1";
+                        var p = cmd.CreateParameter(); p.ParameterName = "@uid"; p.Value = worker.Id; cmd.Parameters.Add(p);
+                        var result = await cmd.ExecuteScalarAsync();
+                        if (result != null && result != DBNull.Value)
+                            resumeUrl = result.ToString();
+                    }
+                    catch { /* non-critical — proceed without resume URL */ }
+                }
+
                 var application = new Application
                 {
                     JobId = request.JobId,
@@ -70,7 +89,7 @@ namespace RightFitGigs.Controllers
                     WorkerSkills = worker.Skills,
                     WorkerTitle = worker.Title,
                     WorkerLocation = worker.Location,
-                    ResumeUrl = worker.ResumeUrl,
+                    ResumeUrl = resumeUrl,
                     CoverLetter = request.CoverLetter ?? string.Empty,
                     Status = "Pending"
                 };
@@ -348,9 +367,10 @@ namespace RightFitGigs.Controllers
                 if (employer == null)
                     return NotFound("Employer not found");
 
+                // Filter by EmployerId — CompanyId is not set on jobs, but EmployerId always is
                 var applications = await _context.Applications
                     .Include(a => a.Job)
-                    .Where(a => a.Job != null && a.Job.CompanyId == employer.CompanyId)
+                    .Where(a => a.Job != null && a.Job.EmployerId == employerId)
                     .OrderByDescending(a => a.AppliedDate)
                     .ToListAsync();
 
