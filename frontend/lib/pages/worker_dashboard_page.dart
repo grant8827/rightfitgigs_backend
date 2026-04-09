@@ -4,7 +4,6 @@ import '../main.dart';
 import '../api_service.dart';
 import '../models/job.dart';
 import '../models/application.dart';
-import 'worker_profile_page.dart';
 import 'messages_page.dart';
 import '../widgets/notification_bell.dart';
 import 'dart:async';
@@ -26,17 +25,86 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
   String? _successMessage;
   Timer? _applicationsPollingTimer;
 
+  // Profile
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _titleCtrl = TextEditingController();
+  final _bioCtrl = TextEditingController();
+  final _skillsCtrl = TextEditingController();
+  bool _isSavingProfile = false;
+  bool _profileSaved = false;
+  String _profileError = '';
+
   @override
   void initState() {
     super.initState();
     _loadJobs();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadApplications());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadApplications();
+      _loadProfileData();
+    });
   }
 
   @override
   void dispose() {
     _applicationsPollingTimer?.cancel();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _locationCtrl.dispose();
+    _titleCtrl.dispose();
+    _bioCtrl.dispose();
+    _skillsCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfileData() async {
+    final userProvider = context.read<UserProvider>();
+    final userId = userProvider.user?['id'];
+    if (userId == null) return;
+    try {
+      final data = await ApiService.getUser(userId);
+      userProvider.login(data);
+      if (mounted) {
+        _firstNameCtrl.text = data['firstName'] ?? '';
+        _lastNameCtrl.text  = data['lastName']  ?? '';
+        _phoneCtrl.text     = data['phone']     ?? '';
+        _locationCtrl.text  = data['location']  ?? '';
+        _titleCtrl.text     = data['title']     ?? '';
+        _bioCtrl.text       = data['bio']       ?? '';
+        _skillsCtrl.text    = data['skills']    ?? '';
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveProfile() async {
+    final userProvider = context.read<UserProvider>();
+    final userId = userProvider.user?['id'];
+    if (userId == null) return;
+    setState(() { _isSavingProfile = true; _profileError = ''; _profileSaved = false; });
+    try {
+      final updated = await ApiService.updateProfile(userId, {
+        'firstName': _firstNameCtrl.text.trim(),
+        'lastName':  _lastNameCtrl.text.trim(),
+        'phone':     _phoneCtrl.text.trim(),
+        'location':  _locationCtrl.text.trim(),
+        'title':     _titleCtrl.text.trim(),
+        'bio':       _bioCtrl.text.trim(),
+        'skills':    _skillsCtrl.text.trim(),
+      });
+      userProvider.login(updated);
+      if (mounted) setState(() { _profileSaved = true; _isSavingProfile = false; });
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _profileSaved = false);
+      });
+    } catch (e) {
+      if (mounted) setState(() {
+        _profileError = 'Failed to save profile. Please try again.';
+        _isSavingProfile = false;
+      });
+    }
   }
 
   Future<void> _loadJobs() async {
@@ -994,94 +1062,149 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
     final userProvider = context.watch<UserProvider>();
     final user = userProvider.user;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Profile',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.blue,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar header
+          Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.blue.shade600,
                   child: Text(
-                    user?['firstName']?[0].toUpperCase() ?? 'W',
-                    style: const TextStyle(color: Colors.white),
+                    (user?['firstName'] ?? 'W')[0].toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                title: Text(
+                const SizedBox(height: 10),
+                Text(
                   '${user?['firstName'] ?? ''} ${user?['lastName'] ?? ''}',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                subtitle: Text(user?['email'] ?? ''),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Account Information',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      leading: const Icon(Icons.person),
-                      title: const Text('Name'),
-                      subtitle: Text(
-                        '${user?['firstName'] ?? ''} ${user?['lastName'] ?? ''}',
-                      ),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.email),
-                      title: const Text('Email'),
-                      subtitle: Text(user?['email'] ?? ''),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.badge),
-                      title: const Text('User Type'),
-                      subtitle: const Text('Job Seeker'),
-                    ),
-                  ],
+                Text(
+                  user?['email'] ?? '',
+                  style: TextStyle(color: Colors.grey.shade600),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          if (_profileError.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Text(_profileError,
+                  style: const TextStyle(color: Colors.red)),
+            ),
+          if (_profileSaved)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text('Profile saved!',
+                      style: TextStyle(color: Colors.green)),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const WorkerProfilePage(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit Full Profile'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
+
+          const Text('Personal Information',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildProfileField('First Name', _firstNameCtrl),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildProfileField('Last Name', _lastNameCtrl),
+              ),
+            ],
+          ),
+          _buildProfileField('Professional Title', _titleCtrl,
+              hint: 'e.g. Software Developer'),
+          _buildProfileField('Phone', _phoneCtrl,
+              keyboardType: TextInputType.phone),
+          _buildProfileField('Location', _locationCtrl,
+              hint: 'City, Country'),
+          _buildProfileField('Bio', _bioCtrl, maxLines: 3,
+              hint: 'Tell employers about yourself'),
+          const SizedBox(height: 8),
+          const Text('Skills',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          _buildProfileField('Skills', _skillsCtrl, maxLines: 2,
+              hint: 'e.g. Flutter, Dart, Firebase'),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSavingProfile ? null : _saveProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _isSavingProfile
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Save Profile',
+                      style: TextStyle(fontSize: 16)),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileField(
+    String label,
+    TextEditingController ctrl, {
+    String? hint,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: ctrl,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          border:
+              OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          filled: true,
+          fillColor: Colors.grey.shade50,
         ),
       ),
     );
