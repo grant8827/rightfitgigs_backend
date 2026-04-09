@@ -243,6 +243,12 @@ export const getAllApplications = async () => {
   return response.data;
 };
 
+// Returns all applications for every job posted by a given employer
+export const getEmployerApplications = async (employerId) => {
+  const response = await apiClient.get(`/applications/employer/${employerId}`);
+  return response.data;
+};
+
 export const getWorkerApplications = async (workerId) => {
   const response = await apiClient.get(`/applications/worker/${workerId}`);
   return response.data;

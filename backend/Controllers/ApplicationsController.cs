@@ -329,6 +329,61 @@ namespace RightFitGigs.Controllers
             }
         }
 
+        // Returns all applications across every job posted by the employer's company.
+        // Accessible only by the employer themselves (or an admin).
+        [Authorize]
+        [HttpGet("employer/{employerId}")]
+        public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetEmployerApplications(string employerId)
+        {
+            try
+            {
+                var tokenUserId = User.GetUserId();
+                var isAdmin = User.GetIsAdmin();
+
+                if (tokenUserId != employerId && !isAdmin)
+                    return Forbid();
+
+                // Resolve the employer's company
+                var employer = await _context.Users.FindAsync(employerId);
+                if (employer == null)
+                    return NotFound("Employer not found");
+
+                var applications = await _context.Applications
+                    .Include(a => a.Job)
+                    .Where(a => a.Job != null && a.Job.CompanyId == employer.CompanyId)
+                    .OrderByDescending(a => a.AppliedDate)
+                    .ToListAsync();
+
+                var response = applications.Select(a => new ApplicationResponse
+                {
+                    Id            = a.Id,
+                    JobId         = a.JobId,
+                    JobTitle      = a.Job?.Title ?? string.Empty,
+                    Company       = a.Job?.Company ?? string.Empty,
+                    WorkerId      = a.WorkerId,
+                    WorkerName    = a.WorkerName,
+                    WorkerEmail   = a.WorkerEmail,
+                    WorkerPhone   = a.WorkerPhone,
+                    WorkerSkills  = a.WorkerSkills,
+                    WorkerTitle   = a.WorkerTitle,
+                    WorkerLocation = a.WorkerLocation,
+                    ResumeUrl     = a.ResumeUrl,
+                    CoverLetter   = a.CoverLetter,
+                    Status        = a.Status,
+                    AppliedDate   = a.AppliedDate,
+                    UpdatedDate   = a.UpdatedDate
+                }).ToList();
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "GetEmployerApplications failed for employerId {EmployerId}", employerId);
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
+
         [Authorize]
         [HttpPut("{id}/status")]
         public async Task<ActionResult<ApplicationResponse>> UpdateApplicationStatus(

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { getJobs, createJob, updateJob, getAllApplications, updateApplicationStatus, deleteJob, toggleJobStatus, getFileUrl, getCompanyProfile, updateCompanyProfile } from '../services/apiService';
+import { getJobs, createJob, updateJob, getEmployerApplications, updateApplicationStatus, deleteJob, toggleJobStatus, getFileUrl, getCompanyProfile, updateCompanyProfile } from '../services/apiService';
 import MessagesPage from './MessagesPage';
 import AdRenderer from '../components/AdRenderer';
 import './EmployerDashboard.css';
@@ -185,7 +185,7 @@ const EmployerDashboard = () => {
   const loadAllApplications = async () => {
     setLoading(true);
     try {
-      const data = await getAllApplications();
+      const data = await getEmployerApplications(user?.id);
       setApplications(data);
     } catch (error) {
       console.error('Failed to load applications:', error);
