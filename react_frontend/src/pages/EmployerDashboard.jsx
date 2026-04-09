@@ -75,6 +75,9 @@ const EmployerDashboard = () => {
         })
         .catch((err) => console.error('Failed to load company profile:', err?.response?.status, err?.message));
     }
+    // Pre-load jobs and applications so the home tab stats are correct immediately
+    loadJobs();
+    if (user?.id) loadAllApplications();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -349,17 +352,17 @@ const EmployerDashboard = () => {
             <div className="stats-cards">
               <div className="stat-card">
                 <div className="stat-icon">💼</div>
-                <div className="stat-value">{jobs.length}</div>
+                <div className="stat-value">{jobs.filter(j => j.isActive).length}</div>
                 <div className="stat-label">Active Jobs</div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">👥</div>
-                <div className="stat-value">23</div>
+                <div className="stat-value">{applications.length}</div>
                 <div className="stat-label">Applicants</div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">📅</div>
-                <div className="stat-value">5</div>
+                <div className="stat-value">{applications.filter(a => a.status === 'Interview').length}</div>
                 <div className="stat-label">Interviews</div>
               </div>
             </div>
@@ -385,22 +388,24 @@ const EmployerDashboard = () => {
             <div className="section">
               <h3>Recent Activity</h3>
               <div className="activity-list">
-                <div className="activity-item">
-                  <div className="activity-icon new">👤</div>
-                  <div className="activity-details">
-                    <div className="activity-title">New Application</div>
-                    <div className="activity-subtitle">John Doe applied for Senior Flutter Developer</div>
-                    <div className="activity-time">1 hour ago</div>
+                {applications.length === 0 ? (
+                  <div className="activity-item">
+                    <div className="activity-details">
+                      <div className="activity-subtitle">No applications yet.</div>
+                    </div>
                   </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-icon success">✅</div>
-                  <div className="activity-details">
-                    <div className="activity-title">Job Posted</div>
-                    <div className="activity-subtitle">Mobile App Developer position is now live</div>
-                    <div className="activity-time">3 hours ago</div>
-                  </div>
-                </div>
+                ) : (
+                  applications.slice(0, 3).map((app) => (
+                    <div className="activity-item" key={app.id}>
+                      <div className="activity-icon new">👤</div>
+                      <div className="activity-details">
+                        <div className="activity-title">New Application</div>
+                        <div className="activity-subtitle">{app.workerName} applied for {app.jobTitle}</div>
+                        <div className="activity-time">{new Date(app.appliedDate).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
