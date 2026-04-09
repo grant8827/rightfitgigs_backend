@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'models/job.dart';
@@ -42,6 +43,33 @@ class ApiService {
     }
 
     return '$mediaBaseUrl/$fileUrl';
+  }
+
+  // ─── JWT Token Storage ─────────────────────────────────────────────────────
+  static const String _tokenKey = 'auth_token';
+
+  static Future<void> saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
+  }
+
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
+
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+  }
+
+  static Future<Map<String, String>> _authHeaders() async {
+    final token = await getToken();
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
   }
 
   static Future<List<Advertisement>> getAdvertisements({
@@ -555,12 +583,85 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // Backend returns { token, user }
+        final token = data['token'] as String?;
+        final userData = data['user'] as Map<String, dynamic>? ?? data;
+        if (token != null) {
+          await saveToken(token);
+        }
+        return userData;
       } else {
         throw Exception('Failed to login');
       }
     } catch (e) {
       throw Exception('Failed to login: $e');
+    }
+  }
+
+  // ─── OTP Registration Flow ─────────────────────────────────────────────────
+
+  /// Step 1: Submit registration form → triggers OTP email.
+  static Future<void> initiateRegistration(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register/initiate'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+      if (response.statusCode != 200) {
+        final body = jsonDecode(response.body);
+        throw Exception(
+          body['error'] ?? body['title'] ?? 'Registration failed',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to initiate registration: $e');
+    }
+  }
+
+  /// Step 2: Submit OTP → creates account and returns {token, user}.
+  static Future<Map<String, dynamic>> verifyRegistrationOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register/verify'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp': otp}),
+      );
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final token = data['token'] as String?;
+        final userData = data['user'] as Map<String, dynamic>? ?? data;
+        if (token != null) {
+          await saveToken(token);
+        }
+        return userData;
+      } else {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'OTP verification failed');
+      }
+    } catch (e) {
+      throw Exception('OTP verification failed: $e');
+    }
+  }
+
+  /// Step 3 (optional): Resend OTP code.
+  static Future<void> resendRegistrationOtp(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register/resend-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+      if (response.statusCode != 200) {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'Failed to resend OTP');
+      }
+    } catch (e) {
+      throw Exception('Failed to resend OTP: $e');
     }
   }
 
@@ -996,6 +1097,33 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Failed to clear notifications: $e');
+    }
+  }
+
+  // ─── Contact ───────────────────────────────────────────────────────────────
+  static Future<void> sendContactMessage({
+    required String name,
+    required String email,
+    required String subject,
+    required String message,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/contact'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'subject': subject,
+          'message': message,
+        }),
+      );
+      if (response.statusCode != 200) {
+        final body = jsonDecode(response.body);
+        throw Exception(body['error'] ?? 'Failed to send message');
+      }
+    } catch (e) {
+      throw Exception('Failed to send contact message: $e');
     }
   }
 }

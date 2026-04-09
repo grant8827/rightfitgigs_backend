@@ -10,7 +10,7 @@ class JoinRightFitGigsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Join RightFit Gigs'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF4F46E5),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -23,7 +23,7 @@ class JoinRightFitGigsPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: const Color(0xFF4F46E5),
               ),
             ),*/
             const SizedBox(height: 20),
@@ -43,7 +43,7 @@ class JoinRightFitGigsPage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.work_outline, color: Colors.blue, size: 30),
+                        Icon(Icons.work_outline, color: const Color(0xFF4F46E5), size: 30),
                         const SizedBox(width: 10),
                         const Text(
                           'Join as a Worker',
@@ -73,7 +73,7 @@ class JoinRightFitGigsPage extends StatelessWidget {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFF4F46E5),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
@@ -99,7 +99,7 @@ class JoinRightFitGigsPage extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.business_center,
-                          color: Colors.blue,
+                          color: const Color(0xFF4F46E5),
                           size: 30,
                         ),
                         const SizedBox(width: 10),
@@ -184,7 +184,7 @@ class JoinRightFitGigsPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.blue, size: 24),
+          Icon(icon, color: const Color(0xFF4F46E5), size: 24),
           const SizedBox(width: 15),
           Expanded(
             child: Column(

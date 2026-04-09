@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../api_service.dart';
-import '../main.dart';
-import 'employer_dashboard_page.dart';
+import 'otp_verification_page.dart';
 
 class EmployerRegistrationPage extends StatefulWidget {
   const EmployerRegistrationPage({super.key});
@@ -60,102 +58,52 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      final result = await ApiService.registerEmployer(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        location: _locationController.text.trim(),
-        title: _titleController.text.trim(),
-        companyName: _companyNameController.text.trim(),
-        companySize: _selectedCompanySize,
-        industry: _selectedIndustry,
-        website: _websiteController.text.trim(),
-        description: _descriptionController.text.trim(),
-        bio: _bioController.text.trim(),
-        password: _passwordController.text,
-      );
+      final email = _emailController.text.trim();
+      final firstName = _firstNameController.text.trim();
 
-      // Auto-login after successful registration
-      final loginData = await ApiService.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      await ApiService.initiateRegistration({
+        'firstName': firstName,
+        'lastName': _lastNameController.text.trim(),
+        'email': email,
+        'phone': _phoneController.text.trim(),
+        'location': _locationController.text.trim(),
+        'title': _titleController.text.trim(),
+        'companyName': _companyNameController.text.trim(),
+        'companySize': _selectedCompanySize,
+        'industry': _selectedIndustry,
+        'website': _websiteController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'bio': _bioController.text.trim(),
+        'password': _passwordController.text,
+        'userType': 'Employer',
+      });
 
       if (mounted) {
-        // Store user data in UserProvider
-        context.read<UserProvider>().login(loginData);
-        // Show success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 30),
-                  SizedBox(width: 10),
-                  Text('Registration Successful!'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(result),
-                  const SizedBox(height: 15),
-                  const Text(
-                    'Welcome to RightFit Gigs! You can now:',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text('• Post job opportunities'),
-                  const Text('• Search for qualified candidates'),
-                  const Text('• Manage your job listings'),
-                  const Text('• Connect with professionals'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => EmployerDashboardPage(
-                          employerName: _companyNameController.text.trim(),
-                          employerId: loginData['id'] ?? 'temp-id',
-                        ),
-                      ),
-                      (Route<dynamic> route) => false,
-                    );
-                  },
-                  child: const Text('Go to Dashboard'),
-                ),
-              ],
-            );
-          },
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationPage(
+              email: email,
+              firstName: firstName,
+              userType: 'Employer',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
+            content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -164,7 +112,7 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Employer Registration'),
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF4F46E5),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -176,14 +124,18 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.business_center, color: Colors.green, size: 30),
+                  Icon(
+                    Icons.business_center,
+                    color: const Color(0xFF4F46E5),
+                    size: 30,
+                  ),
                   SizedBox(width: 10),
                   Text(
                     'Join as an Employer',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: const Color(0xFF4F46E5),
                     ),
                   ),
                 ],
@@ -497,7 +449,7 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _registerEmployer,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
@@ -551,7 +503,7 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.green,
+        color: const Color(0xFF4F46E5),
       ),
     );
   }
@@ -573,7 +525,10 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.green, width: 2),
+          borderSide: const BorderSide(
+            color: const Color(0xFF4F46E5),
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -603,7 +558,10 @@ class _EmployerRegistrationPageState extends State<EmployerRegistrationPage> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.green, width: 2),
+          borderSide: const BorderSide(
+            color: const Color(0xFF4F46E5),
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

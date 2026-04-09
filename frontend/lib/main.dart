@@ -11,6 +11,9 @@ import 'pages/home_page.dart' show LandingHomePage;
 import 'pages/login_page.dart';
 import 'pages/employer_dashboard_page.dart';
 import 'pages/worker_dashboard_page.dart';
+import 'pages/contact_page.dart';
+import 'pages/privacy_policy_page.dart';
+import 'pages/terms_of_service_page.dart';
 import 'api_service.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -29,6 +32,7 @@ class UserProvider extends ChangeNotifier {
   void logout() {
     _user = null;
     _isLoggedIn = false;
+    ApiService.clearToken();
     notifyListeners();
   }
 
@@ -68,9 +72,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'RightFit Gigs',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 5, 2, 58),
-          ),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4F46E5)),
           useMaterial3: true,
         ),
         initialRoute: kIsWeb ? '/landing' : '/home',
@@ -109,7 +111,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF4F46E5),
         foregroundColor: Colors.white,
         elevation: 0,
         leading: Padding(padding: const EdgeInsets.all(5.0)),
@@ -138,7 +140,7 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
+              decoration: BoxDecoration(color: const Color(0xFF4F46E5)),
               child: Consumer<UserProvider>(
                 builder: (context, userProvider, child) {
                   if (userProvider.isLoggedIn) {
@@ -207,7 +209,7 @@ class _HomePageState extends State<HomePage> {
               builder: (context, userProvider, child) {
                 if (userProvider.isLoggedIn) {
                   return ListTile(
-                    leading: Icon(Icons.person, color: Colors.blue),
+                    leading: Icon(Icons.person, color: const Color(0xFF4F46E5)),
                     title: Text('My Profile'),
                     onTap: () {
                       Navigator.pop(context);
@@ -225,7 +227,7 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.group_add, color: Colors.blue),
+              leading: Icon(Icons.group_add, color: const Color(0xFF4F46E5)),
               title: Text('Join RightFit Gigs'),
               onTap: () {
                 Navigator.pop(context);
@@ -244,7 +246,10 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       // My Dashboard - appears for all logged-in users
                       ListTile(
-                        leading: Icon(Icons.dashboard, color: Colors.blue),
+                        leading: Icon(
+                          Icons.dashboard,
+                          color: const Color(0xFF4F46E5),
+                        ),
                         title: Text('My Dashboard'),
                         onTap: () {
                           Navigator.pop(context);
@@ -272,7 +277,10 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                       ListTile(
-                        leading: Icon(Icons.work, color: Colors.blue),
+                        leading: Icon(
+                          Icons.work,
+                          color: const Color(0xFF4F46E5),
+                        ),
                         title: Text('My Applications'),
                         onTap: () {
                           Navigator.pop(context);
@@ -280,7 +288,10 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                       ListTile(
-                        leading: Icon(Icons.bookmark, color: Colors.blue),
+                        leading: Icon(
+                          Icons.bookmark,
+                          color: const Color(0xFF4F46E5),
+                        ),
                         title: Text('Saved Jobs'),
                         onTap: () {
                           Navigator.pop(context);
@@ -308,7 +319,39 @@ class _HomePageState extends State<HomePage> {
               title: Text('Help & Support'),
               onTap: () {
                 Navigator.pop(context);
-                // Handle help
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ContactPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.privacy_tip_outlined,
+                color: Colors.grey.shade600,
+              ),
+              title: Text('Privacy Policy'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PrivacyPolicyPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.gavel, color: Colors.grey.shade600),
+              title: Text('Terms of Service'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TermsOfServicePage(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -350,7 +393,7 @@ class _HomePageState extends State<HomePage> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Signed out successfully'),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: const Color(0xFF14B8A6),
                                   ),
                                 );
                               },
@@ -368,10 +411,10 @@ class _HomePageState extends State<HomePage> {
                 } else {
                   // Show login option when not logged in
                   return ListTile(
-                    leading: Icon(Icons.login, color: Colors.green),
+                    leading: Icon(Icons.login, color: const Color(0xFF14B8A6)),
                     title: Text(
                       'Sign In',
-                      style: TextStyle(color: Colors.green),
+                      style: TextStyle(color: const Color(0xFF14B8A6)),
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -403,7 +446,7 @@ class _HomePageState extends State<HomePage> {
                 builder: (context) => AlertDialog(
                   title: Row(
                     children: [
-                      Icon(Icons.lock_outline, color: Colors.blue),
+                      Icon(Icons.lock_outline, color: const Color(0xFF4F46E5)),
                       SizedBox(width: 8),
                       Text('Login Required'),
                     ],
@@ -428,7 +471,7 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFF4F46E5),
                         foregroundColor: Colors.white,
                       ),
                       child: Text('Sign In'),
@@ -445,7 +488,7 @@ class _HomePageState extends State<HomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: const Color(0xFF4F46E5),
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),

@@ -5,7 +5,7 @@ import { getFileUrl } from '../services/apiService';
 import './WorkerProfile.css';
 
 const WorkerProfile = () => {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeSection, setActiveSection] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,10 +57,11 @@ const WorkerProfile = () => {
         ...jobPreferences
       });
       
-      login(updatedData);
+      updateUser(updatedData);
       setIsEditing(false);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
-    } catch {
+    } catch (err) {
+      console.error('handleSaveProfile error:', err?.response?.status, err?.response?.data || err?.message);
       setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
     } finally {
       setIsSaving(false);
@@ -76,7 +77,7 @@ const WorkerProfile = () => {
 
     try {
       const updatedData = await uploadResumeFile(user.id, file);
-      login(updatedData);
+      updateUser(updatedData);
       setResumeUrl(updatedData.resumeUrl);
       setMessage({ type: 'success', text: 'Resume uploaded successfully! Employers can now view it.' });
     } catch (err) {

@@ -6,11 +6,11 @@ import JobDetailsModal from '../components/JobDetailsModal';
 import ApplyModal from '../components/ApplyModal';
 import MessagesPage from './MessagesPage';
 import AdRenderer from '../components/AdRenderer';
-import { getJobs, submitApplication, getWorkerApplications } from '../services/apiService';
+import { getJobs, submitApplication, getWorkerApplications, getUser } from '../services/apiService';
 import './WorkerDashboard.css';
 
 const WorkerDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('home');
   const [jobs, setJobs] = useState([]);
@@ -25,6 +25,15 @@ const WorkerDashboard = () => {
   const [success, setSuccess] = useState('');
   const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [loadingRecommended, setLoadingRecommended] = useState(false);
+
+  // Re-hydrate the full profile (including resumeUrl) on every mount
+  useEffect(() => {
+    if (user?.id) {
+      getUser(user.id)
+        .then((fullProfile) => updateUser(fullProfile))
+        .catch(() => {/* silently ignore – user stays logged in with cached data */});
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedTab === 'home') {

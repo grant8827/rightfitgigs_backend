@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../api_service.dart';
-import '../main.dart';
-import 'worker_dashboard_page.dart';
+import 'otp_verification_page.dart';
 
 class WorkerRegistrationPage extends StatefulWidget {
   const WorkerRegistrationPage({super.key});
@@ -43,104 +41,55 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
     super.dispose();
   }
 
+  static const Color _indigo = Color(0xFF4F46E5);
+
   Future<void> _registerWorker() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      final result = await ApiService.registerWorker(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        location: _locationController.text.trim(),
-        title: _titleController.text.trim(),
-        skills: _skillsController.text.trim(),
-        bio: _bioController.text.trim(),
-        password: _passwordController.text,
-      );
+      final email = _emailController.text.trim();
+      final firstName = _firstNameController.text.trim();
 
-      // Auto-login after successful registration
-      final loginData = await ApiService.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      await ApiService.initiateRegistration({
+        'firstName': firstName,
+        'lastName': _lastNameController.text.trim(),
+        'email': email,
+        'phone': _phoneController.text.trim(),
+        'location': _locationController.text.trim(),
+        'title': _titleController.text.trim(),
+        'skills': _skillsController.text.trim(),
+        'bio': _bioController.text.trim(),
+        'password': _passwordController.text,
+        'userType': 'Worker',
+      });
 
       if (mounted) {
-        // Store user data in UserProvider
-        context.read<UserProvider>().login(loginData);
-
-        // Show success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 30),
-                  SizedBox(width: 10),
-                  Text('Registration Successful!'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(result),
-                  const SizedBox(height: 15),
-                  const Text(
-                    'Welcome to RightFit Gigs! You can now:',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text('• Browse and apply for jobs'),
-                  const Text('• Set up your profile'),
-                  const Text('• Connect with employers'),
-                  const Text('• Receive job notifications'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close dialog
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder: (context) => const WorkerDashboardPage(),
-                      ),
-                      (Route<dynamic> route) => false,
-                    );
-                  },
-                  child: const Text('Go to Dashboard'),
-                ),
-              ],
-            );
-          },
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationPage(
+              email: email,
+              firstName: firstName,
+              userType: 'Worker',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Registration failed: ${e.toString().replaceAll('Exception: ', '')}',
-            ),
+            content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -149,7 +98,7 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Worker Registration'),
-        backgroundColor: Colors.blue,
+        backgroundColor: _indigo,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -158,7 +107,7 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.blue.withOpacity(0.1), Colors.white],
+            colors: [_indigo.withValues(alpha: 0.1), Colors.white],
           ),
         ),
         child: SingleChildScrollView(
@@ -175,14 +124,14 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       children: [
-                        Icon(Icons.work_outline, size: 60, color: Colors.blue),
+                        Icon(Icons.work_outline, size: 60, color: _indigo),
                         const SizedBox(height: 15),
                         const Text(
                           'Join as a Worker',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: _indigo,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -402,7 +351,7 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _registerWorker,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: _indigo,
                       foregroundColor: Colors.white,
                       elevation: 4,
                       shape: RoundedRectangleBorder(
@@ -466,14 +415,14 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: Colors.blue, size: 24),
+        Icon(icon, color: _indigo, size: 24),
         const SizedBox(width: 10),
         Text(
           title,
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.blue,
+            color: _indigo,
           ),
         ),
       ],
@@ -497,7 +446,7 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.blue),
+        prefixIcon: Icon(icon, color: _indigo),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey[300]!),
@@ -508,7 +457,7 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
+          borderSide: const BorderSide(color: _indigo, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -541,11 +490,11 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: const Icon(Icons.lock_outline, color: Colors.blue),
+        prefixIcon: const Icon(Icons.lock_outline, color: _indigo),
         suffixIcon: IconButton(
           icon: Icon(
             obscureText ? Icons.visibility_off : Icons.visibility,
-            color: Colors.blue,
+            color: _indigo,
           ),
           onPressed: onToggleVisibility,
         ),
@@ -559,7 +508,7 @@ class _WorkerRegistrationPageState extends State<WorkerRegistrationPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
+          borderSide: const BorderSide(color: _indigo, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

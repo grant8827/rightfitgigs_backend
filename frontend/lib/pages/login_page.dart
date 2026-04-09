@@ -89,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF4F46E5),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -101,14 +101,14 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.login, color: Colors.blue, size: 30),
+                  Icon(Icons.login, color: const Color(0xFF4F46E5), size: 30),
                   SizedBox(width: 10),
                   Text(
                     'Sign In',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: const Color(0xFF4F46E5),
                     ),
                   ),
                 ],
@@ -143,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                    borderSide: const BorderSide(color: const Color(0xFF4F46E5), width: 2),
                   ),
                 ),
               ),
@@ -166,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                    borderSide: const BorderSide(color: const Color(0xFF4F46E5), width: 2),
                   ),
                 ),
               ),
@@ -178,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(

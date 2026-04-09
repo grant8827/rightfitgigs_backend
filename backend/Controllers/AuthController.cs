@@ -325,7 +325,16 @@ namespace RightFitGigs.Controllers
                     Initials = user.Initials,
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
-                    IsActive = user.IsActive
+                    IsActive = user.IsActive,
+                    ResumeUrl = user.ResumeUrl,
+                    DesiredJobTitle = user.DesiredJobTitle,
+                    DesiredLocation = user.DesiredLocation,
+                    DesiredSalaryRange = user.DesiredSalaryRange,
+                    DesiredJobType = user.DesiredJobType,
+                    DesiredExperienceLevel = user.DesiredExperienceLevel,
+                    OpenToRemote = user.OpenToRemote,
+                    PreferredIndustries = user.PreferredIndustries,
+                    EducationLevel = user.EducationLevel
                 };
 
                 return Ok(response);

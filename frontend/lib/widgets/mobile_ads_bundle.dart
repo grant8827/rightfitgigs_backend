@@ -40,6 +40,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
   Timer? _pollTimer;
   Timer? _rotateTimer;
   Timer? _popupTimer;
+  OverlayEntry? _popupOverlayEntry;
 
   @override
   void initState() {
@@ -53,6 +54,8 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
     _pollTimer?.cancel();
     _rotateTimer?.cancel();
     _popupTimer?.cancel();
+    _popupOverlayEntry?.remove();
+    _popupOverlayEntry = null;
     super.dispose();
   }
 
@@ -235,27 +238,14 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      showGeneralDialog(
-        context: context,
-        barrierDismissible: popup.isDismissible,
-        barrierLabel: 'Ad Popup',
-        barrierColor: Colors.black45,
-        transitionDuration: const Duration(milliseconds: 320),
-        pageBuilder: (_, __, ___) => _PopupAdDialog(
+      _popupOverlayEntry = OverlayEntry(
+        builder: (_) => _PopupAdDialog(
           ad: popup,
           onClose: () => _handlePopupDismiss(popup, isManual: true),
           onTap: () => _handleAdClick(popup),
         ),
-        transitionBuilder: (_, animation, __, child) {
-          final begin = _popupBeginOffset(popup.position);
-          return SlideTransition(
-            position: Tween<Offset>(begin: begin, end: Offset.zero).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            ),
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
       );
+      Overlay.of(context).insert(_popupOverlayEntry!);
     });
   }
 
@@ -264,15 +254,13 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
     _dismissedPopupIds.add(ad.id);
     _currentPopupIndex = (_currentPopupIndex + 1) % _popupAds.length;
 
-    if (mounted) {
-      Navigator.of(context).pop();
-      _isShowingPopup = false;
+    _popupOverlayEntry?.remove();
+    _popupOverlayEntry = null;
+    _isShowingPopup = false;
 
-      // Immediately show next popup
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _showNextPopup();
-      });
-    }
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _showNextPopup();
+    });
   }
 
   void _handlePopupDismiss(Advertisement ad, {required bool isManual}) {
@@ -280,18 +268,16 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
     _dismissedPopupIds.add(ad.id);
     _currentPopupIndex = (_currentPopupIndex + 1) % _popupAds.length;
 
-    if (mounted) {
-      Navigator.of(context).pop();
-      _isShowingPopup = false;
+    _popupOverlayEntry?.remove();
+    _popupOverlayEntry = null;
+    _isShowingPopup = false;
 
-      if (isManual) {
-        // Wait 1 minute before showing next
-        _lastDismissTime = DateTime.now();
-        _popupTimer = Timer(_dismissWaitDuration, () {
-          _lastDismissTime = null;
-          if (mounted) _showNextPopup();
-        });
-      }
+    if (isManual) {
+      _lastDismissTime = DateTime.now();
+      _popupTimer = Timer(_dismissWaitDuration, () {
+        _lastDismissTime = null;
+        if (mounted) _showNextPopup();
+      });
     }
   }
 
@@ -301,19 +287,6 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
       final uri = Uri.tryParse(ad.targetUrl!);
       if (uri != null)
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Offset _popupBeginOffset(String position) {
-    switch (position) {
-      case 'TopLeft':
-      case 'BottomLeft':
-        return const Offset(-0.35, 0);
-      case 'TopRight':
-      case 'BottomRight':
-        return const Offset(0.35, 0);
-      default:
-        return const Offset(0, 0.35);
     }
   }
 
@@ -330,9 +303,8 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
@@ -347,17 +319,23 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (ad.fileUrl.isNotEmpty)
-                  Image.network(
-                    ApiService.getMediaUrl(ad.fileUrl),
+                  Container(
                     width: double.infinity,
                     height: 110,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                    color: ad.type == 'Video'
+                        ? Colors.black
+                        : Colors.transparent,
+                    child: Image.network(
+                      ApiService.getMediaUrl(ad.fileUrl),
+                      width: double.infinity,
+                      height: 110,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   )
                 else
-                  _buildPlaceholder(),
-                if (ad.description.isNotEmpty ||
-                    (ad.businessName?.isNotEmpty ?? false))
+                  const SizedBox.shrink(),
+                if (ad.description.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.all(10),
                     child: Column(
@@ -375,9 +353,7 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            ad.description.isNotEmpty
-                                ? ad.description
-                                : (ad.businessName ?? 'Sponsored'),
+                            ad.description,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -396,30 +372,64 @@ class _MobileAdsBundleState extends State<MobileAdsBundle> {
       ),
     );
   }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: 110,
-      color: Colors.grey.shade100,
-      alignment: Alignment.center,
-      child: Text(
-        'No media',
-        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-      ),
-    );
-  }
 }
 
-class _PopupAdDialog extends StatelessWidget {
+class _PopupAdDialog extends StatefulWidget {
   final Advertisement ad;
   final VoidCallback onClose;
   final VoidCallback? onTap;
 
   const _PopupAdDialog({required this.ad, required this.onClose, this.onTap});
 
-  Alignment _alignmentForPosition() {
-    switch (ad.position) {
+  @override
+  State<_PopupAdDialog> createState() => _PopupAdDialogState();
+}
+
+class _PopupAdDialogState extends State<_PopupAdDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _opacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _slide = Tween<Offset>(
+      begin: _slideBegin(),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Offset _slideBegin() {
+    switch (widget.ad.position) {
+      case 'TopLeft':
+      case 'BottomLeft':
+        return const Offset(-0.35, 0);
+      case 'TopRight':
+      case 'BottomRight':
+        return const Offset(0.35, 0);
+      default:
+        return const Offset(0, 0.35);
+    }
+  }
+
+  Alignment _alignment() {
+    switch (widget.ad.position) {
       case 'TopLeft':
         return Alignment.topLeft;
       case 'TopRight':
@@ -428,7 +438,6 @@ class _PopupAdDialog extends StatelessWidget {
         return Alignment.bottomLeft;
       case 'BottomRight':
         return Alignment.bottomRight;
-      case 'Center':
       default:
         return Alignment.center;
     }
@@ -438,78 +447,83 @@ class _PopupAdDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Align(
-        alignment: _alignmentForPosition(),
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 260,
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Material(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (ad.isDismissible)
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: onClose,
-                      ),
-                    ),
-                  if (ad.fileUrl.isNotEmpty)
-                    Image.network(
-                      ApiService.getMediaUrl(ad.fileUrl),
-                      width: double.infinity,
-                      height: 130,
-                      fit: BoxFit.contain,
-                    )
-                  else
-                    Container(
-                      width: double.infinity,
-                      height: 130,
-                      color: Colors.grey.shade100,
-                      alignment: Alignment.center,
-                      child: const Text('No media'),
-                    ),
-                  if (ad.description.isNotEmpty ||
-                      (ad.businessName?.isNotEmpty ?? false))
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ad.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
+        alignment: _alignment(),
+        child: SlideTransition(
+          position: _slide,
+          child: FadeTransition(
+            opacity: _opacity,
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: Container(
+                width: 260,
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Material(
+                  color: Colors.white,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.ad.isDismissible)
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: widget.onClose,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 3),
-                            child: Text(
-                              ad.description.isNotEmpty
-                                  ? ad.description
-                                  : (ad.businessName ?? 'Sponsored'),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
+                        ),
+                      if (widget.ad.fileUrl.isNotEmpty)
+                        Image.network(
+                          ApiService.getMediaUrl(widget.ad.fileUrl),
+                          width: double.infinity,
+                          height: 130,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          height: 130,
+                          color: Colors.grey.shade100,
+                          alignment: Alignment.center,
+                          child: const Text('No media'),
+                        ),
+                      if (widget.ad.description.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.ad.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
-                            ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(
+                                  widget.ad.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                ],
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
