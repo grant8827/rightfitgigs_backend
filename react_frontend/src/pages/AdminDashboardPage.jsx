@@ -28,6 +28,7 @@ const AdminDashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchStats = async ({ showLoader = false } = {}) => {
     if (showLoader) {
@@ -37,6 +38,7 @@ const AdminDashboardPage = () => {
     try {
       const response = await getAdminDashboardStats();
       setStats(response);
+      setLastUpdated(new Date());
       setError('');
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to load admin dashboard data.');
@@ -122,7 +124,14 @@ const AdminDashboardPage = () => {
       <header className="admin-topbar">
         <div>
           <h1>Admin Dashboard</h1>
-          <p>Live overview of jobs, workers, businesses, and platform activity.</p>
+          <p>
+            Live overview of jobs, workers, businesses, and platform activity.
+            {lastUpdated && (
+              <span className="admin-last-updated">
+                {' '}· Updated {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </p>
         </div>
         <div className="admin-topbar-actions">
           <span className="admin-user-pill">{user?.firstName} ({user?.email})</span>
@@ -183,6 +192,26 @@ const AdminDashboardPage = () => {
         <article className="admin-kpi-card">
           <h3>Android Downloads</h3>
           <p>{stats?.overview?.androidDownloads ?? 0}</p>
+        </article>
+        <article className="admin-kpi-card">
+          <h3>Pending Applications</h3>
+          <p>{stats?.overview?.pendingApplications ?? 0}</p>
+        </article>
+        <article className="admin-kpi-card">
+          <h3>Total Messages</h3>
+          <p>{stats?.overview?.totalMessages ?? 0}</p>
+        </article>
+        <article className="admin-kpi-card">
+          <h3>Total Notifications</h3>
+          <p>{stats?.overview?.totalNotifications ?? 0}</p>
+        </article>
+        <article className="admin-kpi-card">
+          <h3>Total Ads</h3>
+          <p>{stats?.overview?.totalAds ?? 0}</p>
+        </article>
+        <article className="admin-kpi-card">
+          <h3>Active Ads</h3>
+          <p>{stats?.overview?.activeAds ?? 0}</p>
         </article>
       </section>
 
