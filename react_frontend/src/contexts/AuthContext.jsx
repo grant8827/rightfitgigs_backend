@@ -1,4 +1,5 @@
-import React, { useState, createContext } from 'react';
+import React, { useState, useEffect, createContext } from 'react';
+import { setAuthToken, setLogoutHandler } from '../services/apiService';
 
 // Create the AuthContext
 const AuthContext = createContext(null);
@@ -48,6 +49,7 @@ export function AuthProvider({ children }) {
     const normalizedUser = normalizeAuthPayload(userData);
     setUser(normalizedUser);
     setIsLoggedIn(true);
+    setAuthToken(normalizedUser?.token ?? null);
     // Store only the fields needed for routing/nav — full profile is fetched by dashboards
     localStorage.setItem('user', JSON.stringify(sanitizeForStorage(normalizedUser)));
   };
@@ -55,16 +57,27 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     setIsLoggedIn(false);
+    setAuthToken(null);
     localStorage.removeItem('user');
   };
 
   const updateUser = (updatedFields) => {
     setUser((prev) => {
       const updated = { ...prev, ...updatedFields };
+      // Keep the in-memory token current (updatedFields from API responses won't
+      // have a token, so we preserve prev.token via the spread)
+      if (updated.token) setAuthToken(updated.token);
       localStorage.setItem('user', JSON.stringify(sanitizeForStorage(updated)));
       return updated; // React state keeps the full object for the current session
     });
   };
+
+  // Register the logout handler with apiService so the 401 interceptor can
+  // trigger a proper React-state logout (not just a localStorage wipe).
+  useEffect(() => {
+    setLogoutHandler(logout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = {
     user,

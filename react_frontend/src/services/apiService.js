@@ -18,6 +18,23 @@ export const getFileUrl = (path) => {
   return `${API_ORIGIN}${path}`;
 };
 
+// ─── In-memory auth token ───────────────────────────────────────────────────
+// AuthContext sets this on login / logout / updateUser so the request
+// interceptor always has the current token regardless of localStorage state.
+let _authToken = (() => {
+  try {
+    const u = localStorage.getItem('user');
+    return u ? JSON.parse(u)?.token ?? null : null;
+  } catch { return null; }
+})();
+
+export const setAuthToken = (token) => { _authToken = token; };
+
+// AuthContext registers its logout function here so a 401 can trigger a
+// full React-state logout (not just a localStorage wipe).
+let _logoutHandler = null;
+export const setLogoutHandler = (fn) => { _logoutHandler = fn; };
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -25,29 +42,22 @@ const apiClient = axios.create({
   },
 });
 
-// Attach JWT from localStorage to every request
+// Attach JWT to every request using the in-memory token
 apiClient.interceptors.request.use((config) => {
-  try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      if (user?.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-    }
-  } catch {
-    // Ignore parse errors — request proceeds unauthenticated
+  if (_authToken) {
+    config.headers.Authorization = `Bearer ${_authToken}`;
   }
   return config;
 });
 
-// Log 401s clearly in dev without leaking error details in prod
+// On 401: clear the in-memory token + localStorage, then trigger a proper logout
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token is missing or expired — clear stale session
+      _authToken = null;
       localStorage.removeItem('user');
+      if (_logoutHandler) _logoutHandler();
     }
     return Promise.reject(error);
   }
