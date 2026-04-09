@@ -256,9 +256,9 @@ namespace RightFitGigs.Controllers
                     return Unauthorized("Invalid email or password");
                 }
                 
-                // Load linked preferences and resume
-                var prefs = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == user.Id);
-                var resume = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == user.Id);
+                // Load linked preferences and resume via raw SQL
+                var prefsL = await ReadJobPreferencesRawAsync(user.Id);
+                var resumeUrlL = await ReadResumeUrlRawAsync(user.Id);
 
                 var userResponse = new UserResponse
                 {
@@ -277,15 +277,15 @@ namespace RightFitGigs.Controllers
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
                     IsAdmin = user.IsAdmin,
-                    ResumeUrl = resume?.FileUrl ?? user.ResumeUrl,
-                    DesiredJobTitle = prefs?.DesiredJobTitle ?? user.DesiredJobTitle,
-                    DesiredLocation = prefs?.DesiredLocation ?? user.DesiredLocation,
-                    DesiredSalaryRange = prefs?.DesiredSalaryRange ?? user.DesiredSalaryRange,
-                    DesiredJobType = prefs?.DesiredJobType ?? user.DesiredJobType,
-                    DesiredExperienceLevel = prefs?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
-                    OpenToRemote = prefs != null ? prefs.OpenToRemote : user.OpenToRemote,
-                    PreferredIndustries = prefs?.PreferredIndustries ?? user.PreferredIndustries,
-                    EducationLevel = prefs?.EducationLevel ?? user.EducationLevel
+                    ResumeUrl = resumeUrlL ?? user.ResumeUrl,
+                    DesiredJobTitle = prefsL?.DesiredJobTitle ?? user.DesiredJobTitle,
+                    DesiredLocation = prefsL?.DesiredLocation ?? user.DesiredLocation,
+                    DesiredSalaryRange = prefsL?.DesiredSalaryRange ?? user.DesiredSalaryRange,
+                    DesiredJobType = prefsL?.DesiredJobType ?? user.DesiredJobType,
+                    DesiredExperienceLevel = prefsL?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
+                    OpenToRemote = prefsL.HasValue ? prefsL.Value.OpenToRemote : user.OpenToRemote,
+                    PreferredIndustries = prefsL?.PreferredIndustries ?? user.PreferredIndustries,
+                    EducationLevel = prefsL?.EducationLevel ?? user.EducationLevel
                 };
 
                 // Generate a signed JWT
@@ -323,8 +323,8 @@ namespace RightFitGigs.Controllers
                     return NotFound("User not found");
                 }
 
-                var prefs = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == user.Id);
-                var resume = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == user.Id);
+                var prefsG = await ReadJobPreferencesRawAsync(user.Id);
+                var resumeUrlG = await ReadResumeUrlRawAsync(user.Id);
 
                 var response = new UserResponse
                 {
@@ -342,15 +342,15 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    ResumeUrl = resume?.FileUrl ?? user.ResumeUrl,
-                    DesiredJobTitle = prefs?.DesiredJobTitle ?? user.DesiredJobTitle,
-                    DesiredLocation = prefs?.DesiredLocation ?? user.DesiredLocation,
-                    DesiredSalaryRange = prefs?.DesiredSalaryRange ?? user.DesiredSalaryRange,
-                    DesiredJobType = prefs?.DesiredJobType ?? user.DesiredJobType,
-                    DesiredExperienceLevel = prefs?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
-                    OpenToRemote = prefs != null ? prefs.OpenToRemote : user.OpenToRemote,
-                    PreferredIndustries = prefs?.PreferredIndustries ?? user.PreferredIndustries,
-                    EducationLevel = prefs?.EducationLevel ?? user.EducationLevel
+                    ResumeUrl = resumeUrlG ?? user.ResumeUrl,
+                    DesiredJobTitle = prefsG?.DesiredJobTitle ?? user.DesiredJobTitle,
+                    DesiredLocation = prefsG?.DesiredLocation ?? user.DesiredLocation,
+                    DesiredSalaryRange = prefsG?.DesiredSalaryRange ?? user.DesiredSalaryRange,
+                    DesiredJobType = prefsG?.DesiredJobType ?? user.DesiredJobType,
+                    DesiredExperienceLevel = prefsG?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
+                    OpenToRemote = prefsG.HasValue ? prefsG.Value.OpenToRemote : user.OpenToRemote,
+                    PreferredIndustries = prefsG?.PreferredIndustries ?? user.PreferredIndustries,
+                    EducationLevel = prefsG?.EducationLevel ?? user.EducationLevel
                 };
 
                 return Ok(response);
@@ -428,27 +428,14 @@ namespace RightFitGigs.Controllers
 
                 user.UpdatedDate = DateTime.UtcNow;
 
-                // Upsert into Job_Preferences table
-                var prefs = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == id);
-                if (prefs == null)
-                {
-                    prefs = new Models.JobPreference { UserId = id };
-                    _context.JobPreferences.Add(prefs);
-                }
-                if (request.DesiredJobTitle != null) prefs.DesiredJobTitle = request.DesiredJobTitle;
-                if (request.DesiredLocation != null) prefs.DesiredLocation = request.DesiredLocation;
-                if (request.DesiredSalaryRange != null) prefs.DesiredSalaryRange = request.DesiredSalaryRange;
-                if (request.DesiredJobType != null) prefs.DesiredJobType = request.DesiredJobType;
-                if (request.DesiredExperienceLevel != null) prefs.DesiredExperienceLevel = request.DesiredExperienceLevel;
-                if (request.OpenToRemote.HasValue) prefs.OpenToRemote = request.OpenToRemote.Value;
-                if (request.PreferredIndustries != null) prefs.PreferredIndustries = request.PreferredIndustries;
-                if (request.EducationLevel != null) prefs.EducationLevel = request.EducationLevel;
-                prefs.UpdatedDate = DateTime.UtcNow;
+                // Upsert Job_Preferences via raw SQL
+                await UpsertJobPreferencesRawAsync(id, request);
 
                 await _context.SaveChangesAsync();
 
-                // Re-read resume for response
-                var resume = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == id);
+                // Re-read from tables for the response
+                var prefsU = await ReadJobPreferencesRawAsync(id);
+                var resumeUrlU = await ReadResumeUrlRawAsync(id);
 
                 var response = new UserResponse
                 {
@@ -466,15 +453,15 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    ResumeUrl = resume?.FileUrl ?? user.ResumeUrl,
-                    DesiredJobTitle = prefs.DesiredJobTitle,
-                    DesiredLocation = prefs.DesiredLocation,
-                    DesiredSalaryRange = prefs.DesiredSalaryRange,
-                    DesiredJobType = prefs.DesiredJobType,
-                    DesiredExperienceLevel = prefs.DesiredExperienceLevel,
-                    OpenToRemote = prefs.OpenToRemote,
-                    PreferredIndustries = prefs.PreferredIndustries,
-                    EducationLevel = prefs.EducationLevel
+                    ResumeUrl = resumeUrlU ?? user.ResumeUrl,
+                    DesiredJobTitle = prefsU?.DesiredJobTitle,
+                    DesiredLocation = prefsU?.DesiredLocation,
+                    DesiredSalaryRange = prefsU?.DesiredSalaryRange,
+                    DesiredJobType = prefsU?.DesiredJobType,
+                    DesiredExperienceLevel = prefsU?.DesiredExperienceLevel,
+                    OpenToRemote = prefsU.HasValue ? prefsU.Value.OpenToRemote : user.OpenToRemote,
+                    PreferredIndustries = prefsU?.PreferredIndustries,
+                    EducationLevel = prefsU?.EducationLevel
                 };
 
                 return Ok(response);
@@ -596,16 +583,8 @@ namespace RightFitGigs.Controllers
                 user.ResumeUrl = resumeUrl;
                 user.UpdatedDate = DateTime.UtcNow;
 
-                // Upsert into Resume table
-                var resumeRecord = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == id);
-                if (resumeRecord == null)
-                {
-                    resumeRecord = new Models.Resume { UserId = id };
-                    _context.Resumes.Add(resumeRecord);
-                }
-                resumeRecord.FileUrl = resumeUrl;
-                resumeRecord.FileName = file.FileName;
-                resumeRecord.UploadedDate = DateTime.UtcNow;
+                // Upsert into Resume table via raw SQL
+                await UpsertResumeRawAsync(id, resumeUrl, file.FileName);
 
                 // Update all existing applications so employers immediately see the new resume
                 var workerApplications = await _context.Applications
@@ -618,7 +597,7 @@ namespace RightFitGigs.Controllers
 
                 await _context.SaveChangesAsync();
 
-                var prefsForResume = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == id);
+                var prefsForResume = await ReadJobPreferencesRawAsync(id);
 
                 var response = new UserResponse
                 {
@@ -636,13 +615,13 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    ResumeUrl = resumeRecord.FileUrl,
+                    ResumeUrl = resumeUrl,
                     DesiredJobTitle = prefsForResume?.DesiredJobTitle ?? user.DesiredJobTitle,
                     DesiredLocation = prefsForResume?.DesiredLocation ?? user.DesiredLocation,
                     DesiredSalaryRange = prefsForResume?.DesiredSalaryRange ?? user.DesiredSalaryRange,
                     DesiredJobType = prefsForResume?.DesiredJobType ?? user.DesiredJobType,
                     DesiredExperienceLevel = prefsForResume?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
-                    OpenToRemote = prefsForResume != null ? prefsForResume.OpenToRemote : user.OpenToRemote,
+                    OpenToRemote = prefsForResume.HasValue ? prefsForResume.Value.OpenToRemote : user.OpenToRemote,
                     PreferredIndustries = prefsForResume?.PreferredIndustries ?? user.PreferredIndustries
                 };
 
@@ -740,6 +719,131 @@ namespace RightFitGigs.Controllers
             var tokenUserId = User.GetUserId();
             var isAdmin = User.GetIsAdmin();
             return isAdmin || tokenUserId == userId;
+        }
+
+        // ── Raw SQL helpers for Job_Preferences and Resume tables ─────────────
+        // These bypass EF Core model tracking so they work even without a formal
+        // EF Core migration — the tables are created in Program.cs startup SQL.
+
+        private async Task<(string? DesiredJobTitle, string? DesiredLocation, string? DesiredSalaryRange,
+            string? DesiredJobType, string? DesiredExperienceLevel, bool OpenToRemote,
+            string? PreferredIndustries, string? EducationLevel)?> ReadJobPreferencesRawAsync(string userId)
+        {
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await ((System.Data.Common.DbConnection)conn).OpenAsync();
+                using var cmd = (System.Data.Common.DbCommand)conn.CreateCommand();
+                cmd.CommandText = @"SELECT ""DesiredJobTitle"",""DesiredLocation"",""DesiredSalaryRange"",
+                    ""DesiredJobType"",""DesiredExperienceLevel"",""OpenToRemote"",
+                    ""PreferredIndustries"",""EducationLevel""
+                    FROM ""Job_Preferences"" WHERE ""UserId""=@uid LIMIT 1";
+                var p = cmd.CreateParameter(); p.ParameterName = "@uid"; p.Value = userId; cmd.Parameters.Add(p);
+                using var r = await cmd.ExecuteReaderAsync();
+                if (await r.ReadAsync())
+                    return (
+                        r.IsDBNull(0) ? null : r.GetString(0),
+                        r.IsDBNull(1) ? null : r.GetString(1),
+                        r.IsDBNull(2) ? null : r.GetString(2),
+                        r.IsDBNull(3) ? null : r.GetString(3),
+                        r.IsDBNull(4) ? null : r.GetString(4),
+                        !r.IsDBNull(5) && r.GetBoolean(5),
+                        r.IsDBNull(6) ? null : r.GetString(6),
+                        r.IsDBNull(7) ? null : r.GetString(7)
+                    );
+                return null;
+            }
+            catch { return null; }
+        }
+
+        private async Task<string?> ReadResumeUrlRawAsync(string userId)
+        {
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await ((System.Data.Common.DbConnection)conn).OpenAsync();
+                using var cmd = (System.Data.Common.DbCommand)conn.CreateCommand();
+                cmd.CommandText = "SELECT \"FileUrl\" FROM \"Resume\" WHERE \"UserId\"=@uid LIMIT 1";
+                var p = cmd.CreateParameter(); p.ParameterName = "@uid"; p.Value = userId; cmd.Parameters.Add(p);
+                var result = await cmd.ExecuteScalarAsync();
+                return result is DBNull || result == null ? null : (string)result;
+            }
+            catch { return null; }
+        }
+
+        private static void AddParam(System.Data.Common.DbCommand cmd, string name, object? value)
+        {
+            var p = cmd.CreateParameter();
+            p.ParameterName = name;
+            p.Value = value ?? (object)DBNull.Value;
+            cmd.Parameters.Add(p);
+        }
+
+        private async Task UpsertJobPreferencesRawAsync(string userId, UpdateProfileRequest request)
+        {
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await ((System.Data.Common.DbConnection)conn).OpenAsync();
+                using var cmd = (System.Data.Common.DbCommand)conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO ""Job_Preferences"" (""Id"",""UserId"",""DesiredJobTitle"",""DesiredLocation"",
+                        ""DesiredSalaryRange"",""DesiredJobType"",""DesiredExperienceLevel"",
+                        ""OpenToRemote"",""PreferredIndustries"",""EducationLevel"",""UpdatedDate"")
+                    VALUES (@id,@uid,@jt,@dl,@sr,@jtype,@el,@otr,@pi,@edu,@upd)
+                    ON CONFLICT (""UserId"") DO UPDATE SET
+                        ""DesiredJobTitle"" = COALESCE(@jt, ""Job_Preferences"".""DesiredJobTitle""),
+                        ""DesiredLocation"" = COALESCE(@dl, ""Job_Preferences"".""DesiredLocation""),
+                        ""DesiredSalaryRange"" = COALESCE(@sr, ""Job_Preferences"".""DesiredSalaryRange""),
+                        ""DesiredJobType"" = COALESCE(@jtype, ""Job_Preferences"".""DesiredJobType""),
+                        ""DesiredExperienceLevel"" = COALESCE(@el, ""Job_Preferences"".""DesiredExperienceLevel""),
+                        ""OpenToRemote"" = CASE WHEN @otrprovided THEN @otr ELSE ""Job_Preferences"".""OpenToRemote"" END,
+                        ""PreferredIndustries"" = COALESCE(@pi, ""Job_Preferences"".""PreferredIndustries""),
+                        ""EducationLevel"" = COALESCE(@edu, ""Job_Preferences"".""EducationLevel""),
+                        ""UpdatedDate"" = @upd";
+                AddParam(cmd, "@id", Guid.NewGuid().ToString());
+                AddParam(cmd, "@uid", userId);
+                AddParam(cmd, "@jt", request.DesiredJobTitle);
+                AddParam(cmd, "@dl", request.DesiredLocation);
+                AddParam(cmd, "@sr", request.DesiredSalaryRange);
+                AddParam(cmd, "@jtype", request.DesiredJobType);
+                AddParam(cmd, "@el", request.DesiredExperienceLevel);
+                AddParam(cmd, "@otr", request.OpenToRemote.HasValue ? (object)request.OpenToRemote.Value : DBNull.Value);
+                AddParam(cmd, "@otrprovided", request.OpenToRemote.HasValue);
+                AddParam(cmd, "@pi", request.PreferredIndustries);
+                AddParam(cmd, "@edu", request.EducationLevel);
+                AddParam(cmd, "@upd", DateTime.UtcNow);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex) { Console.WriteLine($"Warning: UpsertJobPreferences failed: {ex.Message}"); }
+        }
+
+        private async Task UpsertResumeRawAsync(string userId, string fileUrl, string fileName)
+        {
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                if (conn.State != System.Data.ConnectionState.Open)
+                    await ((System.Data.Common.DbConnection)conn).OpenAsync();
+                using var cmd = (System.Data.Common.DbCommand)conn.CreateCommand();
+                cmd.CommandText = @"
+                    INSERT INTO ""Resume"" (""Id"",""UserId"",""FileUrl"",""FileName"",""UploadedDate"")
+                    VALUES (@id,@uid,@url,@name,@upd)
+                    ON CONFLICT (""UserId"") DO UPDATE SET
+                        ""FileUrl"" = @url,
+                        ""FileName"" = @name,
+                        ""UploadedDate"" = @upd";
+                AddParam(cmd, "@id", Guid.NewGuid().ToString());
+                AddParam(cmd, "@uid", userId);
+                AddParam(cmd, "@url", fileUrl);
+                AddParam(cmd, "@name", fileName);
+                AddParam(cmd, "@upd", DateTime.UtcNow);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex) { Console.WriteLine($"Warning: UpsertResume failed: {ex.Message}"); }
         }
 
         private static string NormalizeUserType(string? userType)

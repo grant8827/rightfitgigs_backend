@@ -31,7 +31,7 @@ const WorkerDashboard = () => {
     if (user?.id) {
       getUser(user.id)
         .then((fullProfile) => updateUser(fullProfile))
-        .catch(() => {/* silently ignore – user stays logged in with cached data */});
+        .catch((err) => console.error('Failed to re-hydrate profile:', err?.response?.status, err?.response?.data || err?.message));
     }
   }, []);
 
