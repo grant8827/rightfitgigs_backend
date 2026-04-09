@@ -960,6 +960,25 @@ class ApiService {
     }
   }
 
+  static Future<List<Application>> getEmployerApplications(
+    String employerId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/applications/employer/$employerId'),
+        headers: await _authHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Application.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load employer applications');
+      }
+    } catch (e) {
+      throw Exception('Failed to load employer applications: $e');
+    }
+  }
+
   static Future<List<Application>> getJobApplications(String jobId) async {
     try {
       final response = await http.get(

@@ -8,6 +8,7 @@ class Job {
   final String type;
   final String? industry;
   final String? experienceLevel;
+  final String? employerId;
   final bool isRemote;
   final bool isUrgentlyHiring;
   final bool isSeasonal;
@@ -24,6 +25,7 @@ class Job {
     required this.type,
     this.industry,
     this.experienceLevel,
+    this.employerId,
     this.isRemote = false,
     this.isUrgentlyHiring = false,
     this.isSeasonal = false,
@@ -42,6 +44,7 @@ class Job {
       type: json['type'] ?? '',
       industry: json['industry'],
       experienceLevel: json['experienceLevel'],
+      employerId: json['employerId']?.toString(),
       isRemote: json['isRemote'] ?? false,
       isUrgentlyHiring: json['isUrgentlyHiring'] ?? false,
       isSeasonal: json['isSeasonal'] ?? false,

@@ -69,11 +69,12 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
     });
 
     try {
-      // Load all jobs - showing all available job postings
       final allJobs = await ApiService.getJobs();
-
       setState(() {
-        _jobs = allJobs;
+        // Only show jobs belonging to this employer
+        _jobs = allJobs
+            .where((j) => j.employerId == widget.employerId)
+            .toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -140,7 +141,9 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
     });
 
     try {
-      final applications = await ApiService.getAllApplications();
+      final applications = await ApiService.getEmployerApplications(
+        widget.employerId,
+      );
       setState(() {
         _applications = applications;
         _isLoadingApplications = false;
@@ -418,28 +421,47 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
+          Row(
             children: [
-              _buildStatCard(
-                  'Active Jobs', activeJobs.toString(), Icons.work, Colors.green),
-              _buildStatCard(
-                  'Total Jobs', totalJobs.toString(), Icons.list_alt, Colors.blue),
-              _buildStatCard(
-                  'Total Applicants',
+              Expanded(
+                child: _buildStatCard(
+                  'Active Jobs',
+                  activeJobs.toString(),
+                  Icons.work,
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  'Total Jobs',
+                  totalJobs.toString(),
+                  Icons.list_alt,
+                  Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Applicants',
                   totalApplicants.toString(),
                   Icons.people,
-                  Colors.orange),
-              _buildStatCard(
+                  Colors.orange,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
                   'Shortlisted',
                   shortlisted.toString(),
                   Icons.star,
-                  Colors.purple),
+                  Colors.purple,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
