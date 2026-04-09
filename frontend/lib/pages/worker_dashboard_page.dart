@@ -30,6 +30,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
   void initState() {
     super.initState();
     _loadJobs();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadApplications());
   }
 
   @override
@@ -330,7 +331,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
               Expanded(
                 child: _buildStatCard(
                   'Applications',
-                  '5',
+                  _applications.length.toString(),
                   Icons.work_outline,
                   Colors.green,
                 ),
@@ -339,7 +340,10 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
               Expanded(
                 child: _buildStatCard(
                   'Interviews',
-                  '2',
+                  _applications
+                      .where((a) => a.status == 'Interview')
+                      .length
+                      .toString(),
                   Icons.calendar_today,
                   Colors.orange,
                 ),
@@ -347,9 +351,12 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  'Messages',
-                  '3',
-                  Icons.message_outlined,
+                  'Shortlisted',
+                  _applications
+                      .where((a) => a.status == 'Shortlisted')
+                      .length
+                      .toString(),
+                  Icons.star,
                   Colors.blue,
                 ),
               ),
@@ -365,29 +372,55 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          _buildActivityCard(
-            'Application Submitted',
-            'Software Developer at TechCorp',
-            '2 hours ago',
-            Icons.send,
-            Colors.blue,
-          ),
-          const SizedBox(height: 8),
-          _buildActivityCard(
-            'Interview Scheduled',
-            'Frontend Developer at StartupXYZ',
-            '1 day ago',
-            Icons.calendar_today,
-            Colors.green,
-          ),
-          const SizedBox(height: 8),
-          _buildActivityCard(
-            'Profile Viewed',
-            'HR Manager at BigCompany',
-            '3 days ago',
-            Icons.visibility,
-            Colors.orange,
-          ),
+          if (_applications.isEmpty)
+            Card(
+              elevation: 1,
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE3F2FD),
+                  child: Icon(Icons.work_outline, color: Colors.blue),
+                ),
+                title: const Text('No applications yet'),
+                subtitle: const Text('Start applying to jobs to see activity here'),
+              ),
+            )
+          else
+            ..._applications.take(3).map((app) {
+              IconData icon;
+              Color color;
+              String title;
+              switch (app.status) {
+                case 'Interview':
+                  icon = Icons.calendar_today;
+                  color = Colors.green;
+                  title = 'Interview Scheduled';
+                  break;
+                case 'Shortlisted':
+                  icon = Icons.star;
+                  color = Colors.orange;
+                  title = 'Shortlisted';
+                  break;
+                case 'Rejected':
+                  icon = Icons.cancel;
+                  color = Colors.red;
+                  title = 'Application Rejected';
+                  break;
+                default:
+                  icon = Icons.send;
+                  color = Colors.blue;
+                  title = 'Application Submitted';
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _buildActivityCard(
+                  title,
+                  '${app.jobTitle} • ${app.status}',
+                  _formatDate(app.appliedDate),
+                  icon,
+                  color,
+                ),
+              );
+            }),
           const SizedBox(height: 20),
 
           // Recommended Jobs
@@ -398,21 +431,94 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          _buildJobCard(
-            'Senior Flutter Developer',
-            'TechInnovate Inc.',
-            '\$80,000 - \$100,000',
-            'Full-time • Remote',
-            'Posted 1 day ago',
-          ),
-          const SizedBox(height: 8),
-          _buildJobCard(
-            'Mobile App Developer',
-            'Digital Solutions Ltd.',
-            '\$65,000 - \$85,000',
-            'Full-time • Hybrid',
-            'Posted 3 days ago',
-          ),
+          if (_isLoadingJobs)
+            const Center(child: CircularProgressIndicator())
+          else if (_jobs.isEmpty)
+            const Text(
+              'No jobs available at the moment.',
+              style: TextStyle(color: Colors.grey),
+            )
+          else
+            ..._jobs.take(6).map(
+              (job) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                job.title,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          job.company,
+                          style: TextStyle(
+                            color: Colors.blue.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          job.salary,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${job.type}${job.isRemote ? ' \u2022 Remote' : ''}',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    _showJobDetails(context, job),
+                                child: const Text('Details'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => _quickApply(job),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue.shade600,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Apply'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -475,83 +581,6 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
     );
   }
 
-  Widget _buildJobCard(
-    String title,
-    String company,
-    String salary,
-    String type,
-    String posted,
-  ) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.bookmark_outline),
-                  onPressed: () {
-                    // TODO: Save job
-                  },
-                ),
-              ],
-            ),
-            Text(
-              company,
-              style: TextStyle(color: Colors.blue.shade600, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              salary,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              type,
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  posted,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: Apply for job
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: const Text('Apply'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildJobSearch() {
     return Padding(
