@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { updateProfile, uploadResumeFile } from '../services/apiService';
 import { getFileUrl } from '../services/apiService';
@@ -33,6 +33,32 @@ const WorkerProfile = () => {
   });
 
   const [resumeUrl, setResumeUrl] = useState(user?.resumeUrl || '');
+
+  // Re-sync form state whenever the user object in context is updated
+  // (e.g. after WorkerDashboard re-fetches the full profile post-login)
+  useEffect(() => {
+    if (!user) return;
+    setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      bio: user.bio || '',
+      title: user.title || '',
+      skills: user.skills || '',
+    });
+    setJobPreferences({
+      desiredJobTitle: user.desiredJobTitle || '',
+      desiredLocation: user.desiredLocation || '',
+      desiredSalaryRange: user.desiredSalaryRange || '',
+      desiredJobType: user.desiredJobType || 'Full-time',
+      desiredExperienceLevel: user.desiredExperienceLevel || 'Mid',
+      openToRemote: user.openToRemote ?? true,
+      preferredIndustries: user.preferredIndustries || '',
+    });
+    setResumeUrl(user.resumeUrl || '');
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

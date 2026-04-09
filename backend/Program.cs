@@ -316,6 +316,52 @@ try
         {
             Console.WriteLine($"Warning: Could not add PasswordReset columns to Users: {ex.Message}");
         }
+
+        // Create Job_Preferences table if it doesn't exist
+        try
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS ""Job_Preferences"" (
+                    ""Id"" text NOT NULL PRIMARY KEY,
+                    ""UserId"" text NOT NULL UNIQUE REFERENCES ""Users""(""Id"") ON DELETE CASCADE,
+                    ""DesiredJobTitle"" character varying(100),
+                    ""DesiredLocation"" character varying(200),
+                    ""DesiredSalaryRange"" character varying(50),
+                    ""DesiredJobType"" character varying(50),
+                    ""DesiredExperienceLevel"" character varying(50),
+                    ""OpenToRemote"" boolean NOT NULL DEFAULT true,
+                    ""PreferredIndustries"" character varying(200),
+                    ""EducationLevel"" character varying(50),
+                    ""UpdatedDate"" timestamp with time zone NOT NULL DEFAULT now()
+                );";
+            cmd.ExecuteNonQuery();
+            logger.LogInformation("Job_Preferences table ensured.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not create Job_Preferences table: {ex.Message}");
+        }
+
+        // Create Resume table if it doesn't exist
+        try
+        {
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS ""Resume"" (
+                    ""Id"" text NOT NULL PRIMARY KEY,
+                    ""UserId"" text NOT NULL UNIQUE REFERENCES ""Users""(""Id"") ON DELETE CASCADE,
+                    ""FileUrl"" character varying(500) NOT NULL,
+                    ""FileName"" character varying(255),
+                    ""UploadedDate"" timestamp with time zone NOT NULL DEFAULT now()
+                );";
+            cmd.ExecuteNonQuery();
+            logger.LogInformation("Resume table ensured.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Could not create Resume table: {ex.Message}");
+        }
     }
 
     var testEmployerEmail = "employer.test@example.com";

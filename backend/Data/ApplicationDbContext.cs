@@ -17,6 +17,8 @@ namespace RightFitGigs.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Advertisement> Advertisements { get; set; }
         public DbSet<AppMetric> AppMetrics { get; set; }
+        public DbSet<JobPreference> JobPreferences { get; set; }
+        public DbSet<Resume> Resumes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -98,6 +100,28 @@ namespace RightFitGigs.Data
                 entity.HasIndex(e => e.MetricType);
                 entity.HasIndex(e => e.Platform);
                 entity.HasIndex(e => e.CreatedDate);
+            });
+
+            // Configure JobPreference entity (one-to-one with User)
+            modelBuilder.Entity<JobPreference>(entity =>
+            {
+                entity.ToTable("Job_Preferences");
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.HasOne(jp => jp.User)
+                    .WithOne()
+                    .HasForeignKey<JobPreference>(jp => jp.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure Resume entity (one-to-one with User)
+            modelBuilder.Entity<Resume>(entity =>
+            {
+                entity.ToTable("Resume");
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.HasOne(r => r.User)
+                    .WithOne()
+                    .HasForeignKey<Resume>(r => r.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Seed initial data

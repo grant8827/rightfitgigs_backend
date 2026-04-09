@@ -256,6 +256,10 @@ namespace RightFitGigs.Controllers
                     return Unauthorized("Invalid email or password");
                 }
                 
+                // Load linked preferences and resume
+                var prefs = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                var resume = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == user.Id);
+
                 var userResponse = new UserResponse
                 {
                     Id = user.Id,
@@ -272,7 +276,16 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    IsAdmin = user.IsAdmin
+                    IsAdmin = user.IsAdmin,
+                    ResumeUrl = resume?.FileUrl ?? user.ResumeUrl,
+                    DesiredJobTitle = prefs?.DesiredJobTitle ?? user.DesiredJobTitle,
+                    DesiredLocation = prefs?.DesiredLocation ?? user.DesiredLocation,
+                    DesiredSalaryRange = prefs?.DesiredSalaryRange ?? user.DesiredSalaryRange,
+                    DesiredJobType = prefs?.DesiredJobType ?? user.DesiredJobType,
+                    DesiredExperienceLevel = prefs?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
+                    OpenToRemote = prefs != null ? prefs.OpenToRemote : user.OpenToRemote,
+                    PreferredIndustries = prefs?.PreferredIndustries ?? user.PreferredIndustries,
+                    EducationLevel = prefs?.EducationLevel ?? user.EducationLevel
                 };
 
                 // Generate a signed JWT
@@ -310,6 +323,9 @@ namespace RightFitGigs.Controllers
                     return NotFound("User not found");
                 }
 
+                var prefs = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                var resume = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == user.Id);
+
                 var response = new UserResponse
                 {
                     Id = user.Id,
@@ -326,15 +342,15 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    ResumeUrl = user.ResumeUrl,
-                    DesiredJobTitle = user.DesiredJobTitle,
-                    DesiredLocation = user.DesiredLocation,
-                    DesiredSalaryRange = user.DesiredSalaryRange,
-                    DesiredJobType = user.DesiredJobType,
-                    DesiredExperienceLevel = user.DesiredExperienceLevel,
-                    OpenToRemote = user.OpenToRemote,
-                    PreferredIndustries = user.PreferredIndustries,
-                    EducationLevel = user.EducationLevel
+                    ResumeUrl = resume?.FileUrl ?? user.ResumeUrl,
+                    DesiredJobTitle = prefs?.DesiredJobTitle ?? user.DesiredJobTitle,
+                    DesiredLocation = prefs?.DesiredLocation ?? user.DesiredLocation,
+                    DesiredSalaryRange = prefs?.DesiredSalaryRange ?? user.DesiredSalaryRange,
+                    DesiredJobType = prefs?.DesiredJobType ?? user.DesiredJobType,
+                    DesiredExperienceLevel = prefs?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
+                    OpenToRemote = prefs != null ? prefs.OpenToRemote : user.OpenToRemote,
+                    PreferredIndustries = prefs?.PreferredIndustries ?? user.PreferredIndustries,
+                    EducationLevel = prefs?.EducationLevel ?? user.EducationLevel
                 };
 
                 return Ok(response);
@@ -411,7 +427,28 @@ namespace RightFitGigs.Controllers
                     user.PreferredIndustries = request.PreferredIndustries;
 
                 user.UpdatedDate = DateTime.UtcNow;
+
+                // Upsert into Job_Preferences table
+                var prefs = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == id);
+                if (prefs == null)
+                {
+                    prefs = new Models.JobPreference { UserId = id };
+                    _context.JobPreferences.Add(prefs);
+                }
+                if (request.DesiredJobTitle != null) prefs.DesiredJobTitle = request.DesiredJobTitle;
+                if (request.DesiredLocation != null) prefs.DesiredLocation = request.DesiredLocation;
+                if (request.DesiredSalaryRange != null) prefs.DesiredSalaryRange = request.DesiredSalaryRange;
+                if (request.DesiredJobType != null) prefs.DesiredJobType = request.DesiredJobType;
+                if (request.DesiredExperienceLevel != null) prefs.DesiredExperienceLevel = request.DesiredExperienceLevel;
+                if (request.OpenToRemote.HasValue) prefs.OpenToRemote = request.OpenToRemote.Value;
+                if (request.PreferredIndustries != null) prefs.PreferredIndustries = request.PreferredIndustries;
+                if (request.EducationLevel != null) prefs.EducationLevel = request.EducationLevel;
+                prefs.UpdatedDate = DateTime.UtcNow;
+
                 await _context.SaveChangesAsync();
+
+                // Re-read resume for response
+                var resume = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == id);
 
                 var response = new UserResponse
                 {
@@ -429,15 +466,15 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    ResumeUrl = user.ResumeUrl,
-                    DesiredJobTitle = user.DesiredJobTitle,
-                    DesiredLocation = user.DesiredLocation,
-                    DesiredSalaryRange = user.DesiredSalaryRange,
-                    DesiredJobType = user.DesiredJobType,
-                    DesiredExperienceLevel = user.DesiredExperienceLevel,
-                    OpenToRemote = user.OpenToRemote,
-                    PreferredIndustries = user.PreferredIndustries,
-                    EducationLevel = user.EducationLevel
+                    ResumeUrl = resume?.FileUrl ?? user.ResumeUrl,
+                    DesiredJobTitle = prefs.DesiredJobTitle,
+                    DesiredLocation = prefs.DesiredLocation,
+                    DesiredSalaryRange = prefs.DesiredSalaryRange,
+                    DesiredJobType = prefs.DesiredJobType,
+                    DesiredExperienceLevel = prefs.DesiredExperienceLevel,
+                    OpenToRemote = prefs.OpenToRemote,
+                    PreferredIndustries = prefs.PreferredIndustries,
+                    EducationLevel = prefs.EducationLevel
                 };
 
                 return Ok(response);
@@ -559,6 +596,17 @@ namespace RightFitGigs.Controllers
                 user.ResumeUrl = resumeUrl;
                 user.UpdatedDate = DateTime.UtcNow;
 
+                // Upsert into Resume table
+                var resumeRecord = await _context.Resumes.FirstOrDefaultAsync(r => r.UserId == id);
+                if (resumeRecord == null)
+                {
+                    resumeRecord = new Models.Resume { UserId = id };
+                    _context.Resumes.Add(resumeRecord);
+                }
+                resumeRecord.FileUrl = resumeUrl;
+                resumeRecord.FileName = file.FileName;
+                resumeRecord.UploadedDate = DateTime.UtcNow;
+
                 // Update all existing applications so employers immediately see the new resume
                 var workerApplications = await _context.Applications
                     .Where(a => a.WorkerId == id)
@@ -569,6 +617,8 @@ namespace RightFitGigs.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                var prefsForResume = await _context.JobPreferences.FirstOrDefaultAsync(p => p.UserId == id);
 
                 var response = new UserResponse
                 {
@@ -586,14 +636,14 @@ namespace RightFitGigs.Controllers
                     CreatedDate = user.CreatedDate,
                     UpdatedDate = user.UpdatedDate,
                     IsActive = user.IsActive,
-                    ResumeUrl = user.ResumeUrl,
-                    DesiredJobTitle = user.DesiredJobTitle,
-                    DesiredLocation = user.DesiredLocation,
-                    DesiredSalaryRange = user.DesiredSalaryRange,
-                    DesiredJobType = user.DesiredJobType,
-                    DesiredExperienceLevel = user.DesiredExperienceLevel,
-                    OpenToRemote = user.OpenToRemote,
-                    PreferredIndustries = user.PreferredIndustries
+                    ResumeUrl = resumeRecord.FileUrl,
+                    DesiredJobTitle = prefsForResume?.DesiredJobTitle ?? user.DesiredJobTitle,
+                    DesiredLocation = prefsForResume?.DesiredLocation ?? user.DesiredLocation,
+                    DesiredSalaryRange = prefsForResume?.DesiredSalaryRange ?? user.DesiredSalaryRange,
+                    DesiredJobType = prefsForResume?.DesiredJobType ?? user.DesiredJobType,
+                    DesiredExperienceLevel = prefsForResume?.DesiredExperienceLevel ?? user.DesiredExperienceLevel,
+                    OpenToRemote = prefsForResume != null ? prefsForResume.OpenToRemote : user.OpenToRemote,
+                    PreferredIndustries = prefsForResume?.PreferredIndustries ?? user.PreferredIndustries
                 };
 
                 return Ok(response);
