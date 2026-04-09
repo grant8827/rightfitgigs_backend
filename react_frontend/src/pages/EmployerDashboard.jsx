@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { getJobs, createJob, updateJob, getAllApplications, updateApplicationStatus, deleteJob, toggleJobStatus, getFileUrl } from '../services/apiService';
+import { getJobs, createJob, updateJob, getAllApplications, updateApplicationStatus, deleteJob, toggleJobStatus, getFileUrl, getCompanyProfile, updateCompanyProfile } from '../services/apiService';
 import MessagesPage from './MessagesPage';
 import AdRenderer from '../components/AdRenderer';
 import './EmployerDashboard.css';
@@ -53,6 +53,30 @@ const EmployerDashboard = () => {
     founded: ''
   });
   const [companyProfileSaved, setCompanyProfileSaved] = useState(false);
+  const [isSavingCompany, setIsSavingCompany] = useState(false);
+  const [companyProfileError, setCompanyProfileError] = useState('');
+
+  // Load company profile from the database on mount
+  useEffect(() => {
+    if (user?.id) {
+      getCompanyProfile(user.id)
+        .then((data) => {
+          setCompanyProfile({
+            companyName:  data.companyName  || '',
+            industry:     data.industry     || '',
+            companySize:  data.companySize  || '',
+            website:      data.website      || '',
+            location:     data.location     || '',
+            description:  data.description  || '',
+            contactEmail: data.contactEmail || '',
+            contactPhone: '',
+            founded:      ''
+          });
+        })
+        .catch((err) => console.error('Failed to load company profile:', err?.response?.status, err?.message));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (selectedTab === 'jobs') {
@@ -818,10 +842,28 @@ const EmployerDashboard = () => {
 
             <form
               className="company-form"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
-                setCompanyProfileSaved(true);
-                setTimeout(() => setCompanyProfileSaved(false), 3000);
+                setIsSavingCompany(true);
+                setCompanyProfileError('');
+                try {
+                  await updateCompanyProfile(user.id, {
+                    companyName:  companyProfile.companyName,
+                    industry:     companyProfile.industry,
+                    companySize:  companyProfile.companySize,
+                    website:      companyProfile.website,
+                    location:     companyProfile.location,
+                    description:  companyProfile.description,
+                    contactEmail: companyProfile.contactEmail
+                  });
+                  setCompanyProfileSaved(true);
+                  setTimeout(() => setCompanyProfileSaved(false), 3000);
+                } catch (err) {
+                  console.error('Failed to save company profile:', err);
+                  setCompanyProfileError('Failed to save company profile. Please try again.');
+                } finally {
+                  setIsSavingCompany(false);
+                }
               }}
             >
               <div className="form-section-header">Company Information</div>
@@ -945,7 +987,12 @@ const EmployerDashboard = () => {
               </div>
 
               <div className="form-actions">
-                <button type="submit" className="btn-submit">Save Company Profile</button>
+                {companyProfileError && (
+                  <p style={{ color: 'red', marginBottom: '8px' }}>{companyProfileError}</p>
+                )}
+                <button type="submit" className="btn-submit" disabled={isSavingCompany}>
+                  {isSavingCompany ? 'Saving...' : 'Save Company Profile'}
+                </button>
               </div>
             </form>
           </div>

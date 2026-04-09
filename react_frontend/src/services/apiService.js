@@ -353,4 +353,15 @@ export const clearAllNotifications = async (userId) => {
   await apiClient.delete(`/notifications/clear/${userId}`);
 };
 
+// Company profile (Employer)
+export const getCompanyProfile = async (userId) => {
+  const response = await apiClient.get(`/auth/company/${userId}`);
+  return response.data;
+};
+
+export const updateCompanyProfile = async (userId, profileData) => {
+  const response = await apiClient.put(`/auth/company/${userId}`, profileData);
+  return response.data;
+};
+
 export default apiClient;

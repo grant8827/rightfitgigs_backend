@@ -709,6 +709,97 @@ namespace RightFitGigs.Controllers
             }
         }
 
+        // ─── GET /api/auth/company/{userId} ───────────────────────────────────
+        [Authorize]
+        [HttpGet("company/{userId}")]
+        public async Task<IActionResult> GetCompanyProfile(string userId)
+        {
+            if (!IsAuthorizedForUser(userId))
+                return Forbid();
+
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.Company)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                    return NotFound(new { message = "User not found." });
+
+                if (user.Company == null)
+                    return NotFound(new { message = "No company linked to this account." });
+
+                var c = user.Company;
+                return Ok(new
+                {
+                    companyName  = c.Name,
+                    industry     = c.Industry,
+                    companySize  = c.Size,
+                    website      = c.Website,
+                    location     = c.Location,
+                    description  = c.Description,
+                    contactEmail = c.Email
+                });
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "GetCompanyProfile failed for userId={UserId}", userId);
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
+
+        // ─── PUT /api/auth/company/{userId} ───────────────────────────────────
+        [Authorize]
+        [HttpPut("company/{userId}")]
+        public async Task<IActionResult> UpdateCompanyProfile(string userId, [FromBody] UpdateCompanyRequest request)
+        {
+            if (!IsAuthorizedForUser(userId))
+                return Forbid();
+
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.Company)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                    return NotFound(new { message = "User not found." });
+
+                if (user.Company == null)
+                    return NotFound(new { message = "No company linked to this account." });
+
+                var c = user.Company;
+                c.Name        = request.CompanyName?.Trim() ?? c.Name;
+                c.Industry    = request.Industry?.Trim() ?? c.Industry;
+                c.Size        = request.CompanySize?.Trim() ?? c.Size;
+                c.Website     = request.Website?.Trim() ?? c.Website;
+                c.Location    = request.Location?.Trim() ?? c.Location;
+                c.Description = request.Description?.Trim() ?? c.Description;
+                c.Email       = request.ContactEmail?.Trim() ?? c.Email;
+                c.UpdatedDate = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    companyName  = c.Name,
+                    industry     = c.Industry,
+                    companySize  = c.Size,
+                    website      = c.Website,
+                    location     = c.Location,
+                    description  = c.Description,
+                    contactEmail = c.Email
+                });
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "UpdateCompanyProfile failed for userId={UserId}", userId);
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
+
         // ─── Helpers ─────────────────────────────────────────────────────────
 
         /// <summary>
@@ -980,5 +1071,30 @@ namespace RightFitGigs.Controllers
         [Required]
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
+    }
+
+    public class UpdateCompanyRequest
+    {
+        [StringLength(100)]
+        public string? CompanyName { get; set; }
+
+        [StringLength(100)]
+        public string? Industry { get; set; }
+
+        [StringLength(20)]
+        public string? CompanySize { get; set; }
+
+        [StringLength(200)]
+        public string? Website { get; set; }
+
+        [StringLength(100)]
+        public string? Location { get; set; }
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        [StringLength(100)]
+        [EmailAddress]
+        public string? ContactEmail { get; set; }
     }
 }
