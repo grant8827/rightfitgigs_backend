@@ -26,7 +26,18 @@ class _MessagesPageState extends State<MessagesPage> {
   @override
   void initState() {
     super.initState();
-    _loadConversations();
+    if (widget.userId.isNotEmpty) {
+      _loadConversations();
+    }
+  }
+
+  @override
+  void didUpdateWidget(MessagesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload if userId became available after first mount
+    if (oldWidget.userId != widget.userId && widget.userId.isNotEmpty) {
+      _loadConversations();
+    }
   }
 
   Future<void> _loadConversations() async {

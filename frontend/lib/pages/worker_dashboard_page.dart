@@ -24,6 +24,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
   String? _errorMessage;
   String? _successMessage;
   String? _applyingToJobId;
+  int _messagesKey = 0;
   Timer? _applicationsPollingTimer;
 
   // Profile
@@ -344,6 +345,10 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
             currentIndex: _selectedIndex,
             onTap: (index) {
               setState(() {
+                if (index == 3 && _selectedIndex != 3) {
+                  // Force MessagesPage remount to reload conversations
+                  _messagesKey++;
+                }
                 _selectedIndex = index;
               });
             },
@@ -1087,6 +1092,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
     final userProvider = context.watch<UserProvider>();
 
     return MessagesPage(
+      key: ValueKey(_messagesKey),
       userId: userProvider.user?['id'] ?? '',
       userName:
           '${userProvider.user?['firstName'] ?? ''} ${userProvider.user?['lastName'] ?? ''}',

@@ -26,6 +26,7 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
   bool _isLoading = true;
   String _error = '';
   int _selectedIndex = 0;
+  int _messagesKey = 0;
   List<Application> _applications = [];
   bool _isLoadingApplications = false;
 
@@ -354,7 +355,14 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: (index) {
+          setState(() {
+            if (index == 3 && _selectedIndex != 3) {
+              _messagesKey++;
+            }
+            _selectedIndex = index;
+          });
+        },
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
         items: const [
@@ -974,6 +982,7 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
 
   Widget _buildMessagesTab() {
     return MessagesPage(
+      key: ValueKey(_messagesKey),
       userId: widget.employerId,
       userName: widget.employerName,
       userType: 'Employer',
