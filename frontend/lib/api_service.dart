@@ -902,7 +902,7 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/applications'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
         body: jsonEncode({
           'jobId': jobId,
           'workerId': workerId,

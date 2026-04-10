@@ -23,6 +23,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
   bool _isLoadingApplications = false;
   String? _errorMessage;
   String? _successMessage;
+  String? _applyingToJobId;
   Timer? _applicationsPollingTimer;
 
   // Profile
@@ -69,12 +70,12 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
       userProvider.login(data);
       if (mounted) {
         _firstNameCtrl.text = data['firstName'] ?? '';
-        _lastNameCtrl.text  = data['lastName']  ?? '';
-        _phoneCtrl.text     = data['phone']     ?? '';
-        _locationCtrl.text  = data['location']  ?? '';
-        _titleCtrl.text     = data['title']     ?? '';
-        _bioCtrl.text       = data['bio']       ?? '';
-        _skillsCtrl.text    = data['skills']    ?? '';
+        _lastNameCtrl.text = data['lastName'] ?? '';
+        _phoneCtrl.text = data['phone'] ?? '';
+        _locationCtrl.text = data['location'] ?? '';
+        _titleCtrl.text = data['title'] ?? '';
+        _bioCtrl.text = data['bio'] ?? '';
+        _skillsCtrl.text = data['skills'] ?? '';
       }
     } catch (_) {}
   }
@@ -83,27 +84,36 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
     final userProvider = context.read<UserProvider>();
     final userId = userProvider.user?['id'];
     if (userId == null) return;
-    setState(() { _isSavingProfile = true; _profileError = ''; _profileSaved = false; });
+    setState(() {
+      _isSavingProfile = true;
+      _profileError = '';
+      _profileSaved = false;
+    });
     try {
       final updated = await ApiService.updateProfile(userId, {
         'firstName': _firstNameCtrl.text.trim(),
-        'lastName':  _lastNameCtrl.text.trim(),
-        'phone':     _phoneCtrl.text.trim(),
-        'location':  _locationCtrl.text.trim(),
-        'title':     _titleCtrl.text.trim(),
-        'bio':       _bioCtrl.text.trim(),
-        'skills':    _skillsCtrl.text.trim(),
+        'lastName': _lastNameCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        'location': _locationCtrl.text.trim(),
+        'title': _titleCtrl.text.trim(),
+        'bio': _bioCtrl.text.trim(),
+        'skills': _skillsCtrl.text.trim(),
       });
       userProvider.login(updated);
-      if (mounted) setState(() { _profileSaved = true; _isSavingProfile = false; });
+      if (mounted)
+        setState(() {
+          _profileSaved = true;
+          _isSavingProfile = false;
+        });
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) setState(() => _profileSaved = false);
       });
     } catch (e) {
-      if (mounted) setState(() {
-        _profileError = 'Failed to save profile. Please try again.';
-        _isSavingProfile = false;
-      });
+      if (mounted)
+        setState(() {
+          _profileError = 'Failed to save profile. Please try again.';
+          _isSavingProfile = false;
+        });
     }
   }
 
@@ -170,37 +180,37 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
     final userProvider = context.read<UserProvider>();
     final user = userProvider.user;
 
+    setState(() => _applyingToJobId = job.id);
     try {
       await ApiService.submitApplication(
         jobId: job.id,
         workerId: user?['id'] ?? '',
         coverLetter: '',
       );
-      setState(() {
-        _successMessage = 'Application submitted successfully!';
-      });
+      if (mounted) {
+        setState(() {
+          _applyingToJobId = null;
+          _successMessage = 'Application submitted successfully!';
+        });
+        _loadApplications();
+      }
       Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _successMessage = null;
-          });
-        }
+        if (mounted) setState(() => _successMessage = null);
       });
     } catch (e) {
-      setState(() {
-        if (e.toString().contains('already applied')) {
-          _errorMessage = 'You have already applied for this job';
-        } else {
-          _errorMessage = 'Failed to submit application';
-        }
-      });
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _errorMessage = null;
-          });
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _applyingToJobId = null;
+          if (e.toString().contains('already applied')) {
+            _errorMessage = 'You have already applied for this job';
+          } else {
+            _errorMessage = 'Failed to submit application: ${e.toString()}';
+          }
+        });
+        Future.delayed(const Duration(seconds: 4), () {
+          if (mounted) setState(() => _errorMessage = null);
+        });
+      }
     }
   }
 
@@ -449,7 +459,9 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                   child: Icon(Icons.work_outline, color: Colors.blue),
                 ),
                 title: const Text('No applications yet'),
-                subtitle: const Text('Start applying to jobs to see activity here'),
+                subtitle: const Text(
+                  'Start applying to jobs to see activity here',
+                ),
               ),
             )
           else
@@ -507,86 +519,99 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
               style: TextStyle(color: Colors.grey),
             )
           else
-            ..._jobs.take(6).map(
-              (job) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ..._jobs
+                .take(6)
+                .map(
+                  (job) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                job.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    job.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              job.company,
+                              style: TextStyle(
+                                color: Colors.blue.shade600,
+                                fontSize: 14,
                               ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              job.salary,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${job.type}${job.isRemote ? ' \u2022 Remote' : ''}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        _showJobDetails(context, job),
+                                    child: const Text('Details'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _applyingToJobId == job.id
+                                        ? null
+                                        : () => _quickApply(job),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue.shade600,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: _applyingToJobId == job.id
+                                        ? const SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Text('Apply'),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          job.company,
-                          style: TextStyle(
-                            color: Colors.blue.shade600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          job.salary,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${job.type}${job.isRemote ? ' \u2022 Remote' : ''}',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () =>
-                                    _showJobDetails(context, job),
-                                child: const Text('Details'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () => _quickApply(job),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue.shade600,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Apply'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
         ],
       ),
     );
@@ -648,7 +673,6 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
       ),
     );
   }
-
 
   Widget _buildJobSearch() {
     return Padding(
@@ -780,7 +804,9 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: ElevatedButton(
-                                    onPressed: () => _quickApply(job),
+                                    onPressed: _applyingToJobId == job.id
+                                        ? null
+                                        : () => _quickApply(job),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue.shade600,
                                       foregroundColor: Colors.white,
@@ -788,7 +814,16 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                                         vertical: 12,
                                       ),
                                     ),
-                                    child: const Text('Apply Now'),
+                                    child: _applyingToJobId == job.id
+                                        ? const SizedBox(
+                                            height: 18,
+                                            width: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Text('Apply Now'),
                                   ),
                                 ),
                               ],
@@ -1110,8 +1145,10 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.red.shade200),
               ),
-              child: Text(_profileError,
-                  style: const TextStyle(color: Colors.red)),
+              child: Text(
+                _profileError,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           if (_profileSaved)
             Container(
@@ -1126,40 +1163,52 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.green),
                   SizedBox(width: 8),
-                  Text('Profile saved!',
-                      style: TextStyle(color: Colors.green)),
+                  Text('Profile saved!', style: TextStyle(color: Colors.green)),
                 ],
               ),
             ),
 
-          const Text('Personal Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Personal Information',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: _buildProfileField('First Name', _firstNameCtrl),
-              ),
+              Expanded(child: _buildProfileField('First Name', _firstNameCtrl)),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildProfileField('Last Name', _lastNameCtrl),
-              ),
+              Expanded(child: _buildProfileField('Last Name', _lastNameCtrl)),
             ],
           ),
-          _buildProfileField('Professional Title', _titleCtrl,
-              hint: 'e.g. Software Developer'),
-          _buildProfileField('Phone', _phoneCtrl,
-              keyboardType: TextInputType.phone),
-          _buildProfileField('Location', _locationCtrl,
-              hint: 'City, Country'),
-          _buildProfileField('Bio', _bioCtrl, maxLines: 3,
-              hint: 'Tell employers about yourself'),
+          _buildProfileField(
+            'Professional Title',
+            _titleCtrl,
+            hint: 'e.g. Software Developer',
+          ),
+          _buildProfileField(
+            'Phone',
+            _phoneCtrl,
+            keyboardType: TextInputType.phone,
+          ),
+          _buildProfileField('Location', _locationCtrl, hint: 'City, Country'),
+          _buildProfileField(
+            'Bio',
+            _bioCtrl,
+            maxLines: 3,
+            hint: 'Tell employers about yourself',
+          ),
           const SizedBox(height: 8),
-          const Text('Skills',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Skills',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
-          _buildProfileField('Skills', _skillsCtrl, maxLines: 2,
-              hint: 'e.g. Flutter, Dart, Firebase'),
+          _buildProfileField(
+            'Skills',
+            _skillsCtrl,
+            maxLines: 2,
+            hint: 'e.g. Flutter, Dart, Firebase',
+          ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -1175,10 +1224,11 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Text('Save Profile',
-                      style: TextStyle(fontSize: 16)),
+                  : const Text('Save Profile', style: TextStyle(fontSize: 16)),
             ),
           ),
         ],
@@ -1202,8 +1252,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           filled: true,
           fillColor: Colors.grey.shade50,
         ),
