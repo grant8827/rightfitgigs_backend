@@ -213,8 +213,11 @@ namespace RightFitGigs.Controllers
                 // Only the worker who applied, the employer who owns the job, or admin may view
                 var tokenUserId = User.GetUserId();
                 var isAdmin = User.GetIsAdmin();
-                var ownsJob = application.Job != null && await _context.Users
-                    .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId);
+                var ownsJob = application.Job != null && (
+                    application.Job.EmployerId == tokenUserId ||
+                    (!string.IsNullOrEmpty(application.Job.CompanyId) && await _context.Users
+                        .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId))
+                );
 
                 if (!isAdmin && tokenUserId != application.WorkerId && !ownsJob)
                     return Forbid();
@@ -307,8 +310,9 @@ namespace RightFitGigs.Controllers
                 var job = await _context.Jobs.FindAsync(jobId);
                 if (job == null) return NotFound("Job not found");
 
-                var ownsJob = await _context.Users
-                    .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == job.CompanyId);
+                var ownsJob = job.EmployerId == tokenUserId ||
+                    (!string.IsNullOrEmpty(job.CompanyId) && await _context.Users
+                        .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == job.CompanyId));
 
                 if (!isAdmin && !ownsJob)
                     return Forbid();
@@ -426,11 +430,14 @@ namespace RightFitGigs.Controllers
                     return NotFound("Application not found");
                 }
 
-                // Only the employer who owns the job, or admin, may change status
+                // Only the employer who owns the job (by EmployerId or CompanyId), or admin, may change status
                 var tokenUserId = User.GetUserId();
                 var isAdmin = User.GetIsAdmin();
-                var ownsJob = application.Job != null && await _context.Users
-                    .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId);
+                var ownsJob = application.Job != null && (
+                    application.Job.EmployerId == tokenUserId ||
+                    (!string.IsNullOrEmpty(application.Job.CompanyId) && await _context.Users
+                        .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId))
+                );
 
                 if (!isAdmin && !ownsJob)
                     return Forbid();

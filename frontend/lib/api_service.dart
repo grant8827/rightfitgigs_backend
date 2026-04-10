@@ -1004,14 +1004,14 @@ class ApiService {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/applications/$id/status'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
         body: jsonEncode({'status': status}),
       );
 
       if (response.statusCode == 200) {
         return Application.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception('Failed to update application status');
+        throw Exception('Failed to update application status: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Failed to update application status: $e');
