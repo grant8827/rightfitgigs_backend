@@ -1024,6 +1024,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
       if (mounted) {
         setState(() {
           _isLoadingApplications = false;
+          _errorMessage = 'Failed to load applications: $e';
         });
       }
     }

@@ -928,7 +928,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/applications/worker/$workerId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode == 200) {
