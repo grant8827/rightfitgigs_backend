@@ -696,7 +696,7 @@ class ApiService {
 
       final response = await http.post(
         Uri.parse('$baseUrl/messages'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
         body: jsonEncode(requestBody),
       );
 
@@ -715,7 +715,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/messages/conversations/$userId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -746,7 +746,7 @@ class ApiService {
 
       final response = await http.get(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -764,7 +764,7 @@ class ApiService {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/messages/$messageId/mark-read'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode != 204) {
@@ -784,7 +784,7 @@ class ApiService {
         Uri.parse(
           '$baseUrl/messages/conversation/$conversationId/mark-read/$userId',
         ),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode != 204) {
@@ -799,7 +799,7 @@ class ApiService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/messages/$messageId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode != 204) {
