@@ -19,6 +19,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import ContactPage from './pages/ContactPage';
+import DeleteAccountPage from './pages/DeleteAccountPage';
 import './App.css';
 
 // Protected Route Component
@@ -57,6 +58,7 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/delete-account" element={<DeleteAccountPage />} />
             
             <Route
               path="/worker-dashboard"

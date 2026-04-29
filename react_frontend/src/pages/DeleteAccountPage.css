@@ -1,0 +1,170 @@
+.delete-account-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4f46e5 0%, #14b8a6 100%);
+}
+
+.delete-account-container {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  padding-top: 120px;
+}
+
+.delete-account-card {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 450px;
+  text-align: center;
+}
+
+.delete-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.delete-account-card h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 800;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+  border-left: 4px solid #f44;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+.warning-list {
+  text-align: left;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 1rem 1rem 1rem 2rem;
+  margin-bottom: 2rem;
+  color: #555;
+  line-height: 1.8;
+}
+
+.btn-danger {
+  width: 100%;
+  padding: 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background 0.2s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  width: 100%;
+  padding: 1rem;
+  background: transparent;
+  color: #666;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  border-color: #999;
+  color: #333;
+}
+
+.btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-home {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #4f46e5, #14b8a6);
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.btn-home:hover {
+  opacity: 0.9;
+}
+
+.back-link {
+  margin-top: 1.5rem;
+}
+
+.back-link a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.back-link a:hover {
+  text-decoration: underline;
+}

@@ -370,4 +370,11 @@ export const updateCompanyProfile = async (userId, profileData) => {
   return response.data;
 };
 
+export const deleteAccount = async (userId, token) => {
+  const response = await apiClient.delete(`/auth/account/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
 export default apiClient;
