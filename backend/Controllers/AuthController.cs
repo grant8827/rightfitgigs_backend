@@ -981,6 +981,47 @@ namespace RightFitGigs.Controllers
 
             return trimmedUrl;
         }
+
+        // ─── Delete Account ───────────────────────────────────────────────────
+        [Authorize]
+        [HttpDelete("account/{id}")]
+        public async Task<IActionResult> DeleteAccount(string id)
+        {
+            try
+            {
+                var requestingUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                                    ?? User.FindFirst("sub")?.Value;
+
+                if (requestingUserId != id)
+                    return Forbid();
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
+                if (user == null)
+                    return NotFound("User not found");
+
+                // Soft-delete: mark inactive and anonymise PII
+                user.IsActive = false;
+                user.Email = $"deleted_{id}@deleted.invalid";
+                user.FirstName = "Deleted";
+                user.LastName = "User";
+                user.Phone = null;
+                user.Bio = null;
+                user.Skills = null;
+                user.Title = null;
+                user.ResumeUrl = null;
+                user.UpdatedDate = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Account deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+                logger.LogError(ex, "DeleteAccount failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
     }
 
     public class ResumeUploadRequest
