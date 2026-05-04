@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { registerWorker, verifyRegistrationOtp, resendRegistrationOtp } from '../services/apiService';
+import { registerWorker, verifyRegistrationOtp } from '../services/apiService';
 import { useAuth } from '../hooks/useAuth';
 import Navbar from '../components/Navbar';
 import OtpVerificationStep from '../components/OtpVerificationStep';
