@@ -335,6 +335,14 @@ const EmployerDashboard = () => {
               <span className="nav-icon">🏢</span>
               <span>Company</span>
             </button>
+            <hr className="sidebar-divider" />
+            <button
+              className="sidebar-close-account"
+              onClick={() => navigate('/delete-account')}
+            >
+              <span className="nav-icon">🗑️</span>
+              <span>Close Account</span>
+            </button>
           </nav>
           <div className="sidebar-left-ad">
             <AdRenderer showPopup={false} showPinned={true} pinnedMode="inline" inlineSlot="SidebarLeft" />

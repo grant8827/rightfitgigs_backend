@@ -122,6 +122,21 @@
   background: #f5f6ff;
 }
 
+.sidebar-divider {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 0.5rem 1rem;
+}
+
+.sidebar-close-account {
+  color: #dc2626 !important;
+}
+
+.sidebar-close-account:hover {
+  background: #fff5f5 !important;
+  color: #b91c1c !important;
+}
+
 .sidebar-left-ad {
   border-top: 1px solid #e0e0e0;
   margin-top: auto;
