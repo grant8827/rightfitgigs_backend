@@ -987,6 +987,8 @@ namespace RightFitGigs.Controllers
         [HttpDelete("account/{id}")]
         public async Task<IActionResult> DeleteAccount(string id)
         {
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
+
             try
             {
                 var requestingUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
@@ -995,31 +997,61 @@ namespace RightFitGigs.Controllers
                 if (requestingUserId != id)
                     return Forbid();
 
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
                 if (user == null)
                     return NotFound("User not found");
 
-                // Soft-delete: mark inactive and anonymise PII
-                user.IsActive = false;
-                user.Email = $"deleted_{id}@deleted.invalid";
-                user.FirstName = "Deleted";
-                user.LastName = "User";
-                user.Phone = null;
-                user.Bio = null;
-                user.Skills = null;
-                user.Title = null;
-                user.ResumeUrl = null;
-                user.UpdatedDate = DateTime.UtcNow;
+                // Use raw SQL with an explicit transaction to guarantee correct delete order
+                // and avoid EF Core change-tracker cascade ordering surprises.
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    // 1. If employer: delete applications on their jobs first, then the jobs
+                    if (user.UserType == "Employer")
+                    {
+                        await _context.Database.ExecuteSqlRawAsync(
+                            @"DELETE FROM ""Applications"" WHERE ""JobId"" IN (SELECT ""Id"" FROM ""Jobs"" WHERE ""EmployerId"" = {0})",
+                            id);
+                        await _context.Database.ExecuteSqlRawAsync(
+                            @"DELETE FROM ""Jobs"" WHERE ""EmployerId"" = {0}",
+                            id);
+                    }
 
-                await _context.SaveChangesAsync();
+                    // 2. Delete applications where this user is the worker
+                    await _context.Database.ExecuteSqlRawAsync(
+                        @"DELETE FROM ""Applications"" WHERE ""WorkerId"" = {0}",
+                        id);
+
+                    // 3. Delete messages (no FK constraint, plain string columns)
+                    await _context.Database.ExecuteSqlRawAsync(
+                        @"DELETE FROM ""Messages"" WHERE ""SenderId"" = {0} OR ""ReceiverId"" = {0}",
+                        id);
+
+                    // 4. Delete notifications (no FK constraint, plain string column)
+                    await _context.Database.ExecuteSqlRawAsync(
+                        @"DELETE FROM ""Notifications"" WHERE ""UserId"" = {0}",
+                        id);
+
+                    // 5. Delete the user row — PostgreSQL ON DELETE CASCADE handles Job_Preferences and Resume
+                    await _context.Database.ExecuteSqlRawAsync(
+                        @"DELETE FROM ""Users"" WHERE ""Id"" = {0}",
+                        id);
+
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
 
                 return Ok(new { message = "Account deleted successfully" });
             }
             catch (Exception ex)
             {
-                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<AuthController>>();
                 logger.LogError(ex, "DeleteAccount failed for id {Id}", id);
-                return StatusCode(500, "An error occurred. Please try again.");
+                // Include error details to help diagnose issues
+                return StatusCode(500, new { message = "An error occurred while deleting the account.", detail = ex.Message });
             }
         }
     }
