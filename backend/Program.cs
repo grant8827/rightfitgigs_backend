@@ -412,6 +412,39 @@ try
         
         logger.LogInformation("Database seeding completed successfully");
     }
+
+    var testWorkerEmail = "worker.test@example.com";
+    var existingWorker = context.Users.FirstOrDefault(u => u.Email == testWorkerEmail);
+
+    if (existingWorker == null)
+    {
+        var workerUser = new User
+        {
+            FirstName = "Test",
+            LastName = "Worker",
+            Email = testWorkerEmail,
+            Phone = "555-0303",
+            Location = "Remote",
+            Title = "Software Developer",
+            Bio = "Test job seeker account for development and testing purposes",
+            Skills = "JavaScript, React, Node.js",
+            UserType = "Worker",
+            DesiredJobTitle = "Frontend Developer",
+            DesiredLocation = "Remote",
+            DesiredSalaryRange = "$60k-$80k",
+            DesiredJobType = "Full-time",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123"),
+            IsActive = true,
+            IsAdmin = false,
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = DateTime.UtcNow
+        };
+
+        context.Users.Add(workerUser);
+        context.SaveChanges();
+
+        logger.LogInformation("Test worker user seeded successfully");
+    }
 }
 catch (Exception ex)
 {
