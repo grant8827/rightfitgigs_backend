@@ -57,7 +57,7 @@ namespace RightFitGigs.Controllers
                 var recentJobs = await _context.Jobs
                     .Where(j => j.IsActive && j.PostedDate >= DateTime.UtcNow.AddDays(-7))
                     .OrderByDescending(j => j.PostedDate)
-                    .Take(3)
+                    .Take(5)
                     .Select(j => new
                     {
                         Type = "job_posted",
@@ -68,48 +68,7 @@ namespace RightFitGigs.Controllers
                     })
                     .ToListAsync();
 
-                // Get recent users (last 7 days)
-                var recentUsers = await _context.Users
-                    .Where(u => u.IsActive && u.UserType == "Worker" && u.CreatedDate >= DateTime.UtcNow.AddDays(-7))
-                    .OrderByDescending(u => u.CreatedDate)
-                    .Take(2)
-                    .Select(u => new
-                    {
-                        Type = "profile_updated",
-                        Title = $"Profile updated: {u.Title} available",
-                        Subtitle = $"{u.FirstName} {u.LastName}",
-                        Time = GetTimeAgo(u.CreatedDate),
-                        Icon = "person_outline"
-                    })
-                    .ToListAsync();
-
-                // Get recent companies (last 7 days)
-                var recentCompanies = await _context.Companies
-                    .Where(c => c.IsActive && c.CreatedDate >= DateTime.UtcNow.AddDays(-7))
-                    .OrderByDescending(c => c.CreatedDate)
-                    .Take(2)
-                    .Select(c => new
-                    {
-                        Type = "company_joined",
-                        Title = $"New company joined: {c.Name}",
-                        Subtitle = c.Name,
-                        Time = GetTimeAgo(c.CreatedDate),
-                        Icon = "business_outlined"
-                    })
-                    .ToListAsync();
-
-                var allActivity = new List<object>();
-                allActivity.AddRange(recentJobs);
-                allActivity.AddRange(recentUsers);
-                allActivity.AddRange(recentCompanies);
-
-                // Sort by time (most recent first) and take top 5
-                var sortedActivity = allActivity
-                    .OrderByDescending(a => GetDateFromTimeAgo(((dynamic)a).Time))
-                    .Take(5)
-                    .ToList();
-
-                return Ok(sortedActivity);
+                return Ok(recentJobs);
             }
             catch (Exception ex)
             {
