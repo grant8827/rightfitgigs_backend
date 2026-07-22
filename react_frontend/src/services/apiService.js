@@ -137,6 +137,14 @@ export const deleteAdvertisement = async (id) => {
   await apiClient.delete(`/advertisements/${id}`);
 };
 
+export const trackVisit = async () => {
+  try {
+    await apiClient.post('/stats/track-visit', { platform: 'Web' });
+  } catch {
+    // Visit tracking should never block the app.
+  }
+};
+
 export const trackAdvertisementView = async (id) => {
   await apiClient.post(`/advertisements/${id}/track-view`);
 };

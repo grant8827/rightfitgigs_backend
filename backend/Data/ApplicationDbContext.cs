@@ -224,7 +224,7 @@ namespace RightFitGigs.Data
             );
 
             // Seed sample users
-            // Note: Password is "password123" for demo user (Admin user)
+            // Note: Password is "password123" for all demo users
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
@@ -240,6 +240,21 @@ namespace RightFitGigs.Data
                     UserType = "Worker",
                     PasswordHash = "$2a$11$eXUE2pctmN2lvrGRJfJiTOLfL02cUcjuY2tnsjG./iopZ6GafngO6", // password123
                     IsAdmin = true // Admin user for dashboard access
+                },
+                new User
+                {
+                    Id = "user-2-jane",
+                    FirstName = "Jane",
+                    LastName = "Doe",
+                    Email = "jane.doe@example.com",
+                    Phone = "555-0102",
+                    Location = "New York",
+                    Bio = "HR manager looking for top talent across multiple industries",
+                    Skills = string.Empty,
+                    Title = "HR Manager",
+                    UserType = "Employer",
+                    PasswordHash = "$2a$11$eXUE2pctmN2lvrGRJfJiTOLfL02cUcjuY2tnsjG./iopZ6GafngO6", // password123
+                    IsAdmin = false
                 }
             );
         }
