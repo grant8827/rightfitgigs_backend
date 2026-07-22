@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
+import { trackVisit } from './services/apiService';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -42,6 +43,10 @@ const ProtectedRoute = ({ children, allowedType, requireAdmin = false }) => {
 };
 
 function App() {
+  useEffect(() => {
+    trackVisit();
+  }, []);
+
   return (
     <Router>
       <AuthProvider>

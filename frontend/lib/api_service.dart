@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -179,6 +180,25 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'platform': platform}),
       );
+    } catch (_) {}
+  }
+
+  // Fires exactly once per install, on the first launch of the native app,
+  // so the admin dashboard's Apple/Android download counts reflect real installs.
+  static const String _installTrackedKey = 'install_tracked';
+
+  static Future<void> trackInstallIfNeeded() async {
+    if (kIsWeb) return;
+
+    try {
+      final platform = _detectPlatform();
+      if (platform != 'Apple' && platform != 'Android') return;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(_installTrackedKey) == true) return;
+
+      await trackAppDownload(platform);
+      await prefs.setBool(_installTrackedKey, true);
     } catch (_) {}
   }
 

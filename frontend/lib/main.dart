@@ -58,6 +58,7 @@ class UserProvider extends ChangeNotifier {
 
 void main() {
   ApiService.trackVisit();
+  ApiService.trackInstallIfNeeded();
   runApp(const MyApp());
 }
 
