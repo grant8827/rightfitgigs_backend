@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api_service.dart';
+import 'resume_viewer_page.dart';
 import '../models/job.dart';
 import '../models/application.dart';
 import 'add_job_page.dart';
@@ -11,10 +12,13 @@ class EmployerDashboardPage extends StatefulWidget {
   final String employerName;
   final String employerId;
 
+  final int initialIndex;
+
   const EmployerDashboardPage({
     super.key,
     required this.employerName,
     required this.employerId,
+    this.initialIndex = 0,
   });
 
   @override
@@ -25,7 +29,7 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
   List<Job> _jobs = [];
   bool _isLoading = true;
   String _error = '';
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   int _messagesKey = 0;
   List<Application> _applications = [];
   bool _isLoadingApplications = false;
@@ -46,6 +50,7 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     _loadJobs();
     _loadAllApplications();
     _loadCompanyProfile();
@@ -70,12 +75,9 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
     });
 
     try {
-      final allJobs = await ApiService.getJobs();
+      final jobs = await ApiService.getJobs(employerId: widget.employerId);
       setState(() {
-        // Only show jobs belonging to this employer
-        _jobs = allJobs
-            .where((j) => j.employerId == widget.employerId)
-            .toList();
+        _jobs = jobs;
         _isLoading = false;
       });
     } catch (e) {
@@ -122,7 +124,11 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
         'description': _descriptionCtrl.text.trim(),
         'contactEmail': _contactEmailCtrl.text.trim(),
       });
-      if (mounted) setState(() { _profileSaved = true; _isSavingProfile = false; });
+      if (mounted)
+        setState(() {
+          _profileSaved = true;
+          _isSavingProfile = false;
+        });
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) setState(() => _profileSaved = false);
       });
@@ -181,6 +187,58 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
     }
   }
 
+  Future<void> _deleteApplication(Application app) async {
+    try {
+      await ApiService.deleteApplication(app.id);
+      await _loadAllApplications();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete application: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showDeleteApplicationDialog(Application app) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Application'),
+          content: Text(
+            'Delete ${app.workerName}\'s application for "${app.jobTitle}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await _deleteApplication(app);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _handleMessageApplicant(Application app) {
     // Directly navigate to conversation page
     Navigator.push(
@@ -202,68 +260,274 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
   }
 
   void _showApplicantProfile(Application app) {
+    final statusColor = _getStatusColor(app.status);
+    final initials = app.workerName.trim().split(' ').take(2).map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').join();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.person, color: Colors.blue),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(app.workerName, style: const TextStyle(fontSize: 20)),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildProfileSection('Job Title', app.workerTitle),
-              _buildProfileSection('Email', app.workerEmail),
-              _buildProfileSection('Phone', app.workerPhone),
-              _buildProfileSection('Location', app.workerLocation),
-              _buildProfileSection('Skills', app.workerSkills),
-              if (app.coverLetter.isNotEmpty)
-                _buildProfileSection(
-                  'Cover Letter',
-                  app.coverLetter,
-                  isMultiline: true,
+              // ── Header ──────────────────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade700, Colors.blue.shade500],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 ),
-              if (app.resumeUrl != null && app.resumeUrl!.isNotEmpty)
-                _buildProfileSection('Resume', app.resumeUrl!),
-              _buildProfileSection(
-                'Applied For',
-                app.jobTitle,
-                highlightColor: Colors.blue.shade50,
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: Colors.white.withOpacity(0.25),
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      app.workerName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (app.workerTitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        app.workerTitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.85),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.15),
+                        border: Border.all(color: Colors.white.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        app.status,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              _buildProfileSection(
-                'Status',
-                app.status,
-                statusColor: _getStatusColor(app.status),
+
+              // ── Body ────────────────────────────────────────────
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Applied for
+                      _buildInfoTile(Icons.work_outline, 'Applied For', app.jobTitle, tileColor: Colors.blue.shade50),
+                      const SizedBox(height: 10),
+
+                      // Contact info row
+                      if (app.workerEmail.isNotEmpty)
+                        _buildInfoTile(Icons.email_outlined, 'Email', app.workerEmail),
+                      if (app.workerPhone.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        _buildInfoTile(Icons.phone_outlined, 'Phone', app.workerPhone),
+                      ],
+                      if (app.workerLocation.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        _buildInfoTile(Icons.location_on_outlined, 'Location', app.workerLocation),
+                      ],
+
+                      // Skills
+                      if (app.workerSkills.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        const Text('Skills', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: app.workerSkills
+                              .split(RegExp(r'[,;]+'))
+                              .map((s) => s.trim())
+                              .where((s) => s.isNotEmpty)
+                              .map((skill) => Chip(
+                                    label: Text(skill, style: const TextStyle(fontSize: 12)),
+                                    backgroundColor: Colors.blue.shade50,
+                                    side: BorderSide(color: Colors.blue.shade200),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    visualDensity: VisualDensity.compact,
+                                  ))
+                              .toList(),
+                        ),
+                      ],
+
+                      // Resume
+                      if (app.resumeUrl != null && app.resumeUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        const Text('Resume', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.picture_as_pdf, color: Colors.green.shade700, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Resume attached', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.green.shade800)),
+                                    Text('Tap to view or print', style: TextStyle(fontSize: 11, color: Colors.green.shade600)),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () => _openResume(context, app.resumeUrl!, app.workerName),
+                                icon: const Icon(Icons.open_in_new, size: 16),
+                                label: const Text('View'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green.shade600,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  textStyle: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // Cover letter
+                      if (app.coverLetter.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        const Text('Cover Letter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Text(app.coverLetter, style: const TextStyle(fontSize: 13, height: 1.5, color: Colors.black87)),
+                        ),
+                      ],
+
+                      // Applied date
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey.shade500),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Applied ${_formatDate(app.appliedDate)}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              _buildProfileSection(
-                'Applied Date',
-                app.appliedDate.toString().split('.')[0],
+
+              // ── Actions ─────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _handleMessageApplicant(app);
+                        },
+                        icon: const Icon(Icons.message, size: 18),
+                        label: const Text('Message'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleMessageApplicant(app);
-            },
-            icon: const Icon(Icons.message),
-            label: const Text('Message'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String label, String value, {Color? tileColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: tileColor ?? Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: Colors.blue.shade600),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+              ],
             ),
           ),
         ],
@@ -271,44 +535,20 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
     );
   }
 
-  Widget _buildProfileSection(
-    String label,
-    String value, {
-    bool isMultiline = false,
-    Color? highlightColor,
-    Color? statusColor,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: highlightColor ?? Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: statusColor != null
-            ? Border.all(color: statusColor, width: 2)
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: statusColor ?? Colors.black87,
-              fontWeight: statusColor != null ? FontWeight.bold : null,
-            ),
-          ),
-        ],
+  String _formatDate(DateTime date) {
+    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  void _openResume(BuildContext context, String resumeUrl, String applicantName) {
+    final fullUrl = ApiService.getMediaUrl(resumeUrl);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResumeViewerPage(
+          resumeUrl: fullUrl,
+          applicantName: applicantName,
+        ),
       ),
     );
   }
@@ -368,7 +608,10 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.work), label: 'Jobs'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Candidates'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Candidates',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
           BottomNavigationBarItem(icon: Icon(Icons.business), label: 'Profile'),
         ],
@@ -488,8 +731,11 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            AddJobPage(employerName: widget.employerName),
+                        builder: (context) => AddJobPage(
+                          employerName: widget.employerName,
+                          employerId: widget.employerId,
+                          companyName: _companyNameCtrl.text.trim(),
+                        ),
                       ),
                     );
                     if (result == true) _loadJobs();
@@ -527,7 +773,9 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ..._applications.take(3).map(
+            ..._applications
+                .take(3)
+                .map(
                   (app) => Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
@@ -536,8 +784,9 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                         child: Text(
                           app.workerName.isNotEmpty ? app.workerName[0] : '?',
                           style: const TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       title: Text(app.workerName),
@@ -546,7 +795,9 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                         label: Text(
                           app.status,
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 11),
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
                         ),
                         backgroundColor: _getStatusColor(app.status),
                         padding: EdgeInsets.zero,
@@ -589,8 +840,10 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.red.shade200),
               ),
-              child: Text(_profileError,
-                  style: const TextStyle(color: Colors.red)),
+              child: Text(
+                _profileError,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           if (_profileSaved)
             Container(
@@ -605,8 +858,10 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.green),
                   SizedBox(width: 8),
-                  Text('Company profile saved!',
-                      style: TextStyle(color: Colors.green)),
+                  Text(
+                    'Company profile saved!',
+                    style: TextStyle(color: Colors.green),
+                  ),
                 ],
               ),
             ),
@@ -644,10 +899,11 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Text('Save Profile',
-                      style: TextStyle(fontSize: 16)),
+                  : const Text('Save Profile', style: TextStyle(fontSize: 16)),
             ),
           ),
         ],
@@ -723,8 +979,11 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          AddJobPage(employerName: widget.employerName),
+                      builder: (context) => AddJobPage(
+                        employerName: widget.employerName,
+                        employerId: widget.employerId,
+                        companyName: _companyNameCtrl.text.trim(),
+                      ),
                     ),
                   );
                   if (result == true) {
@@ -949,6 +1208,22 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                                   ],
                                 ],
                               ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: () =>
+                                      _showDeleteApplicationDialog(app),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 18,
+                                  ),
+                                  label: const Text('Delete'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1067,8 +1342,11 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        AddJobPage(employerName: widget.employerName),
+                    builder: (context) => AddJobPage(
+                      employerName: widget.employerName,
+                      employerId: widget.employerId,
+                      companyName: _companyNameCtrl.text.trim(),
+                    ),
                   ),
                 );
                 if (result == true) {
@@ -1293,8 +1571,12 @@ class _EmployerDashboardPageState extends State<EmployerDashboardPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            AddJobPage(employerName: widget.employerName, jobToEdit: job),
+        builder: (context) => AddJobPage(
+          employerName: widget.employerName,
+          employerId: widget.employerId,
+          companyName: _companyNameCtrl.text.trim(),
+          jobToEdit: job,
+        ),
       ),
     );
 

@@ -521,5 +521,56 @@ namespace RightFitGigs.Controllers
                 return StatusCode(500, "An error occurred. Please try again.");
             }
         }
+
+        [Authorize]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteApplication(string id)
+        {
+            try
+            {
+                var application = await _context.Applications
+                    .Include(a => a.Job)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+
+                if (application == null)
+                {
+                    return NotFound("Application not found");
+                }
+
+                var tokenUserId = User.GetUserId();
+                var isAdmin = User.GetIsAdmin();
+                var ownsApplication = application.WorkerId == tokenUserId;
+                var ownsJob = application.Job != null && (
+                    application.Job.EmployerId == tokenUserId ||
+                    (!string.IsNullOrEmpty(application.Job.CompanyId) && await _context.Users
+                        .AnyAsync(u => u.Id == tokenUserId && u.CompanyId == application.Job.CompanyId))
+                );
+
+                if (!isAdmin && !ownsApplication && !ownsJob)
+                {
+                    return Forbid();
+                }
+
+                var notifications = await _context.Notifications
+                    .Where(n => n.RelatedId == application.Id)
+                    .ToListAsync();
+
+                if (notifications.Count > 0)
+                {
+                    _context.Notifications.RemoveRange(notifications);
+                }
+
+                _context.Applications.Remove(application);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ApplicationsController>>();
+                logger.LogError(ex, "DeleteApplication failed for id {Id}", id);
+                return StatusCode(500, "An error occurred. Please try again.");
+            }
+        }
     }
 }

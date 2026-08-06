@@ -218,12 +218,15 @@ class ApiService {
     bool? isRemote,
     bool? isUrgentlyHiring,
     bool? isSeasonal,
+    String? employerId,
     int page = 1,
     int pageSize = 20,
   }) async {
     try {
       final queryParams = <String, String>{};
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (employerId != null && employerId.isNotEmpty)
+        queryParams['employerId'] = employerId;
       if (location != null && location != 'All Locations')
         queryParams['location'] = location;
       if (type != null && type != 'All Types') queryParams['type'] = type;
@@ -257,15 +260,17 @@ class ApiService {
     }
   }
 
-  static Future<Job> createJob({
+  static Future<void> createJob({
     required String title,
     required String company,
+    String? employerId,
     required String location,
     required String description,
     required String salary,
     required String type,
     String? industry,
     String? experienceLevel,
+    String? educationLevel,
     bool isRemote = false,
     bool isUrgentlyHiring = false,
     bool isSeasonal = false,
@@ -286,17 +291,19 @@ class ApiService {
       if (industry != null) requestBody['industry'] = industry;
       if (experienceLevel != null)
         requestBody['experienceLevel'] = experienceLevel;
+      if (educationLevel != null)
+        requestBody['educationLevel'] = educationLevel;
+      if (employerId != null && employerId.isNotEmpty) {
+        requestBody['employerId'] = employerId;
+      }
 
       final response = await http.post(
         Uri.parse('$baseUrl/jobs'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
         body: jsonEncode(requestBody),
       );
 
-      if (response.statusCode == 201) {
-        final json = jsonDecode(response.body);
-        return Job.fromJson(json);
-      } else {
+      if (response.statusCode != 201) {
         throw Exception('Failed to create job');
       }
     } catch (e) {
@@ -304,16 +311,18 @@ class ApiService {
     }
   }
 
-  static Future<Job> updateJob({
+  static Future<void> updateJob({
     required String id,
     required String title,
     required String company,
+    String? employerId,
     required String location,
     required String description,
     required String salary,
     required String type,
     String? industry,
     String? experienceLevel,
+    String? educationLevel,
     bool isRemote = false,
     bool isUrgentlyHiring = false,
     bool isSeasonal = false,
@@ -334,17 +343,19 @@ class ApiService {
       if (industry != null) requestBody['industry'] = industry;
       if (experienceLevel != null)
         requestBody['experienceLevel'] = experienceLevel;
+      if (educationLevel != null)
+        requestBody['educationLevel'] = educationLevel;
+      if (employerId != null && employerId.isNotEmpty) {
+        requestBody['employerId'] = employerId;
+      }
 
       final response = await http.put(
         Uri.parse('$baseUrl/jobs/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
         body: jsonEncode(requestBody),
       );
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return Job.fromJson(json);
-      } else {
+      if (response.statusCode != 200 && response.statusCode != 204) {
         throw Exception('Failed to update job');
       }
     } catch (e) {
@@ -356,7 +367,7 @@ class ApiService {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/jobs/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode != 204) {
@@ -371,7 +382,7 @@ class ApiService {
     try {
       final response = await http.patch(
         Uri.parse('$baseUrl/jobs/$id/toggle-status'),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authHeaders(),
       );
 
       if (response.statusCode != 200) {
@@ -764,10 +775,7 @@ class ApiService {
         '$baseUrl/messages/conversation/$conversationId',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: await _authHeaders(),
-      );
+      final response = await http.get(uri, headers: await _authHeaders());
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
@@ -887,6 +895,41 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Failed to upload resume: $e');
+    }
+  }
+
+  /// Uploads a resume file to the backend and returns the updated user profile.
+  /// The backend saves the file and returns a relative URL like /uploads/resumes/{id}/{filename}.
+  static Future<Map<String, dynamic>> uploadResumeFile(
+    String id,
+    String filePath,
+    String fileName,
+  ) async {
+    try {
+      final token = await getToken();
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/auth/profile/$id/resume/upload'),
+      );
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        await http.MultipartFile.fromPath('file', filePath, filename: fileName),
+      );
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+          'Server returned ${response.statusCode}: ${response.body}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to upload resume file: $e');
     }
   }
 
@@ -1031,10 +1074,27 @@ class ApiService {
       if (response.statusCode == 200) {
         return Application.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception('Failed to update application status: ${response.statusCode}');
+        throw Exception(
+          'Failed to update application status: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw Exception('Failed to update application status: $e');
+    }
+  }
+
+  static Future<void> deleteApplication(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/applications/$id'),
+        headers: await _authHeaders(),
+      );
+
+      if (response.statusCode != 204) {
+        throw Exception('Failed to delete application');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete application: $e');
     }
   }
 
@@ -1169,6 +1229,24 @@ class ApiService {
     } catch (e) {
       throw Exception('Failed to update company profile: $e');
     }
+  }
+
+  // ─── Account Deletion ──────────────────────────────────────────────────────
+  static Future<void> deleteAccount(String userId) async {
+    final headers = await _authHeaders();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/auth/account/$userId'),
+      headers: headers,
+    );
+    if (response.statusCode != 200) {
+      String message = 'Failed to delete account (${response.statusCode})';
+      try {
+        final body = jsonDecode(response.body);
+        if (body['message'] != null) message = body['message'];
+      } catch (_) {}
+      throw Exception(message);
+    }
+    await clearToken();
   }
 
   // ─── Contact ───────────────────────────────────────────────────────────────

@@ -5,12 +5,12 @@ import 'pages/join_rightfit_gigs_page.dart' show JoinRightFitGigsPage;
 import 'pages/landing_page.dart';
 import 'pages/hiring_page.dart';
 import 'pages/search_page.dart';
-import 'pages/profile_page.dart';
 import 'pages/messages_page.dart';
 import 'pages/home_page.dart' show LandingHomePage;
 import 'pages/login_page.dart';
 import 'pages/employer_dashboard_page.dart';
 import 'pages/worker_dashboard_page.dart';
+import 'pages/worker_profile_page.dart';
 import 'pages/contact_page.dart';
 import 'pages/privacy_policy_page.dart';
 import 'pages/terms_of_service_page.dart';
@@ -95,21 +95,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  late final List<Widget> _pages;
 
-  // ...existing code...
-  final List<Widget> _pages = [
-    const LandingHomePage(),
-    const HiringPage(),
-    MessagesPage(
-      userId: 'current-user-id', // TODO: Replace with actual user ID
-      userName: 'Current User', // TODO: Replace with actual user name
-      userType: 'Worker', // TODO: Replace with actual user type
-    ),
-    const SearchPage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      LandingHomePage(onSwitchTab: (i) => setState(() => _currentIndex = i)),
+      const HiringPage(),
+      MessagesPage(
+        userId: 'current-user-id',
+        userName: 'Current User',
+        userType: 'Worker',
+      ),
+      const SearchPage(),
+    ];
+  }
+
   // ...existing code...
   @override
   Widget build(BuildContext context) {
+    final pages = _pages;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF4F46E5),
@@ -214,29 +220,53 @@ class _HomePageState extends State<HomePage> {
                     title: Text('My Profile'),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfilePage(),
-                        ),
-                      );
+                      if (userProvider.user?['userType'] == 'Employer') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EmployerDashboardPage(
+                              employerName:
+                                  '${userProvider.user?['firstName']} ${userProvider.user?['lastName']}',
+                              employerId: userProvider.user?['id'] ?? '',
+                            ),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WorkerProfilePage(),
+                          ),
+                        );
+                      }
                     },
                   );
                 } else {
-                  return SizedBox.shrink(); // Hide when not logged in
+                  return SizedBox.shrink();
                 }
               },
             ),
-            ListTile(
-              leading: Icon(Icons.group_add, color: const Color(0xFF4F46E5)),
-              title: Text('Join RightFit Gigs'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const JoinRightFitGigsPage(),
+            Consumer<UserProvider>(
+              builder: (context, userProvider, child) {
+                if (userProvider.isLoggedIn) {
+                  return const SizedBox.shrink();
+                }
+
+                return ListTile(
+                  leading: Icon(
+                    Icons.group_add,
+                    color: const Color(0xFF4F46E5),
                   ),
+                  title: Text('Join RightFit Gigs'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JoinRightFitGigsPage(),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -285,18 +315,27 @@ class _HomePageState extends State<HomePage> {
                         title: Text('My Applications'),
                         onTap: () {
                           Navigator.pop(context);
-                          // Handle my applications
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.bookmark,
-                          color: const Color(0xFF4F46E5),
-                        ),
-                        title: Text('Saved Jobs'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Handle saved jobs
+                          if (userProvider.user?['userType'] == 'Employer') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EmployerDashboardPage(
+                                  employerName:
+                                      '${userProvider.user?['firstName']} ${userProvider.user?['lastName']}',
+                                  employerId: userProvider.user?['id'] ?? '',
+                                  initialIndex: 2,
+                                ),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const WorkerDashboardPage(initialIndex: 2),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ],
@@ -307,14 +346,6 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             Divider(),
-            ListTile(
-              leading: Icon(Icons.settings, color: Colors.grey.shade600),
-              title: Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                // Handle settings
-              },
-            ),
             ListTile(
               leading: Icon(Icons.help_outline, color: Colors.grey.shade600),
               title: Text('Help & Support'),
@@ -355,59 +386,161 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
-            ListTile(
-              leading: Icon(Icons.info_outline, color: Colors.grey.shade600),
-              title: Text('About'),
-              onTap: () {
-                Navigator.pop(context);
-                // Handle about
-              },
-            ),
             Divider(),
             Consumer<UserProvider>(
-              builder: (context, userProvider, child) {
+              builder: (drawerCtx, userProvider, child) {
                 if (userProvider.isLoggedIn) {
                   // Show logout option when logged in
-                  return ListTile(
-                    leading: Icon(Icons.logout, color: Colors.red),
-                    title: Text(
-                      'Sign Out',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Handle sign out
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text('Sign Out'),
-                          content: Text('Are you sure you want to sign out?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text('Cancel'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                userProvider.logout();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Signed out successfully'),
-                                    backgroundColor: const Color(0xFF14B8A6),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: Text('Sign Out'),
-                            ),
-                          ],
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.logout, color: Colors.red),
+                        title: Text(
+                          'Sign Out',
+                          style: TextStyle(color: Colors.red),
                         ),
-                      );
-                    },
+                        onTap: () {
+                          Navigator.pop(drawerCtx);
+                          // Handle sign out
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Sign Out'),
+                              content: Text(
+                                'Are you sure you want to sign out?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    userProvider.logout();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Signed out successfully',
+                                        ),
+                                        backgroundColor: const Color(
+                                          0xFF14B8A6,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: Text('Sign Out'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.delete_forever, color: Colors.red),
+                        title: Text(
+                          'Delete Account',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        onTap: () {
+                          Navigator.pop(drawerCtx);
+                          showDialog(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: const Text('Delete Account'),
+                              content: const Text(
+                                'This will permanently delete your account and all associated data. This action cannot be undone.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(dialogContext),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    Navigator.pop(dialogContext);
+                                    final navigator = Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    );
+                                    try {
+                                      await ApiService.deleteAccount(
+                                        userProvider.user!['id'] as String,
+                                      );
+                                      if (context.mounted) {
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (successCtx) => AlertDialog(
+                                            title: const Text(
+                                              'Account Deleted',
+                                            ),
+                                            content: const Text(
+                                              'Your account has been deleted. You no longer have access to RightFitGigs with this account.',
+                                            ),
+                                            actions: [
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  Navigator.pop(successCtx);
+                                                  userProvider.logout();
+                                                  navigator
+                                                      .pushNamedAndRemoveUntil(
+                                                        kIsWeb
+                                                            ? '/landing'
+                                                            : '/home',
+                                                        (route) => false,
+                                                      );
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(
+                                                    0xFF14B8A6,
+                                                  ),
+                                                  foregroundColor: Colors.white,
+                                                ),
+                                                child: const Text('OK'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      } else {
+                                        userProvider.logout();
+                                        navigator.pushNamedAndRemoveUntil(
+                                          kIsWeb ? '/landing' : '/home',
+                                          (route) => false,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Failed to delete account: $e',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Delete Account'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   );
                 } else {
                   // Show login option when not logged in
@@ -418,7 +551,7 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(color: const Color(0xFF14B8A6)),
                     ),
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pop(drawerCtx);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -433,7 +566,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: _pages[_currentIndex],
+      body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {

@@ -90,12 +90,13 @@ namespace RightFitGigs.Controllers
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToListAsync();
+                var companyNamesByEmployerId = await GetCompanyNamesByEmployerIdAsync(jobs);
 
                 var response = jobs.Select(j => new JobResponse
                 {
                     Id = j.Id,
                     Title = j.Title,
-                    Company = j.Company,
+                    Company = GetDisplayCompanyName(j, companyNamesByEmployerId),
                     Location = j.Location,
                     Description = j.Description,
                     Salary = j.Salary,
@@ -132,12 +133,13 @@ namespace RightFitGigs.Controllers
                 {
                     return NotFound($"Job with ID {id} not found");
                 }
+                var companyName = await GetCompanyNameForEmployerIdAsync(job.EmployerId);
 
                 var response = new JobResponse
                 {
                     Id = job.Id,
                     Title = job.Title,
-                    Company = job.Company,
+                    Company = string.IsNullOrWhiteSpace(companyName) ? job.Company : companyName,
                     Location = job.Location,
                     Description = job.Description,
                     Salary = job.Salary,
@@ -170,6 +172,11 @@ namespace RightFitGigs.Controllers
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
+                }
+                var companyName = await GetCompanyNameForEmployerIdAsync(request.EmployerId);
+                if (!string.IsNullOrWhiteSpace(companyName))
+                {
+                    request.Company = companyName;
                 }
 
                 var job = new Job
@@ -237,9 +244,12 @@ namespace RightFitGigs.Controllers
                 {
                     return NotFound($"Job with ID {id} not found");
                 }
+                var companyName = await GetCompanyNameForEmployerIdAsync(
+                    request.EmployerId ?? job.EmployerId
+                );
 
                 job.Title = request.Title;
-                job.Company = request.Company;
+                job.Company = string.IsNullOrWhiteSpace(companyName) ? request.Company : companyName;
                 job.Location = request.Location;
                 job.Description = request.Description;
                 job.Salary = request.Salary;
@@ -250,6 +260,7 @@ namespace RightFitGigs.Controllers
                 job.IsRemote = request.IsRemote;
                 job.IsUrgentlyHiring = request.IsUrgentlyHiring;
                 job.IsSeasonal = request.IsSeasonal;
+                job.EmployerId = request.EmployerId ?? job.EmployerId;
                 job.UpdatedDate = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
@@ -315,6 +326,58 @@ namespace RightFitGigs.Controllers
             {
                 return StatusCode(500, "An error occurred. Please try again.");
             }
+        }
+
+        private async Task<Dictionary<string, string>> GetCompanyNamesByEmployerIdAsync(
+            IEnumerable<Job> jobs
+        )
+        {
+            var employerIds = jobs
+                .Where(j => !string.IsNullOrWhiteSpace(j.EmployerId))
+                .Select(j => j.EmployerId!)
+                .Distinct()
+                .ToList();
+
+            if (employerIds.Count == 0)
+            {
+                return new Dictionary<string, string>();
+            }
+
+            return await _context.Users
+                .Include(u => u.Company)
+                .Where(u => employerIds.Contains(u.Id) && u.Company != null)
+                .ToDictionaryAsync(u => u.Id, u => u.Company!.Name);
+        }
+
+        private async Task<string?> GetCompanyNameForEmployerIdAsync(string? employerId)
+        {
+            if (string.IsNullOrWhiteSpace(employerId))
+            {
+                return null;
+            }
+
+            return await _context.Users
+                .Include(u => u.Company)
+                .Where(u => u.Id == employerId && u.Company != null)
+                .Select(u => u.Company!.Name)
+                .FirstOrDefaultAsync();
+        }
+
+        private static string GetDisplayCompanyName(
+            Job job,
+            IReadOnlyDictionary<string, string> companyNamesByEmployerId
+        )
+        {
+            if (
+                !string.IsNullOrWhiteSpace(job.EmployerId) &&
+                companyNamesByEmployerId.TryGetValue(job.EmployerId!, out var companyName) &&
+                !string.IsNullOrWhiteSpace(companyName)
+            )
+            {
+                return companyName;
+            }
+
+            return job.Company;
         }
 
         [HttpGet("locations")]

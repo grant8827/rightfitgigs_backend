@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api_service.dart';
 import '../models/notification.dart' as model;
@@ -19,21 +20,21 @@ class NotificationBell extends StatefulWidget {
 class _NotificationBellState extends State<NotificationBell> {
   int _notificationCount = 0;
   bool _isLoading = false;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _loadNotificationCount();
-    _startPeriodicRefresh();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadNotificationCount();
+    });
   }
 
-  void _startPeriodicRefresh() {
-    Future.delayed(const Duration(seconds: 30), () {
-      if (mounted) {
-        _loadNotificationCount();
-        _startPeriodicRefresh();
-      }
-    });
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadNotificationCount() async {
@@ -47,9 +48,8 @@ class _NotificationBellState extends State<NotificationBell> {
           _notificationCount = notifications.length;
         });
       }
-    } catch (e) {
-      print('Error loading notification count: $e');
-      // Silently fail
+    } catch (_) {
+      // Silently fail — backend may not be reachable
     }
   }
 

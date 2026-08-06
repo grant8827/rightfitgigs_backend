@@ -147,6 +147,8 @@ class _WorkerProfilePageState extends State<WorkerProfilePage> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx'],
+        withData: false,
+        withReadStream: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -157,20 +159,24 @@ class _WorkerProfilePageState extends State<WorkerProfilePage> {
           throw Exception('User ID not found');
         }
 
+        if (file.path == null) {
+          throw Exception('Could not access file path');
+        }
+
         setState(() {
           _isSaving = true;
           _message = null;
         });
 
-        // Simulate resume upload URL (in production, upload to cloud storage)
-        final fakeUrl =
-            'https://storage.rightfitgigs.com/resumes/$userId/${file.name}';
-
-        final updatedUser = await ApiService.uploadResume(userId, fakeUrl);
+        final updatedUser = await ApiService.uploadResumeFile(
+          userId,
+          file.path!,
+          file.name,
+        );
         context.read<UserProvider>().login(updatedUser);
 
         setState(() {
-          _resumeUrl = fakeUrl;
+          _resumeUrl = updatedUser['resumeUrl'];
           _message = 'Resume uploaded successfully!';
           _isSuccess = true;
         });

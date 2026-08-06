@@ -1,58 +1,59 @@
 import 'package:flutter/material.dart';
 import '../models/job.dart';
+import '../api_service.dart';
 
-class JobSeekingPage extends StatelessWidget {
+class JobSeekingPage extends StatefulWidget {
   const JobSeekingPage({super.key});
 
   @override
+  State<JobSeekingPage> createState() => _JobSeekingPageState();
+}
+
+class _JobSeekingPageState extends State<JobSeekingPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  List<Job> _jobs = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadJobs();
+  }
+
+  Future<void> _loadJobs() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      final jobs = await ApiService.getJobs();
+      setState(() {
+        _jobs = jobs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load jobs: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<Job> get _filteredJobs {
+    if (_searchQuery.isEmpty) return _jobs;
+    return _jobs.where((job) {
+      return job.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          job.company.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          job.location.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Sample job data
-    final jobs = [
-      Job(
-        id: '1',
-        title: 'Flutter Developer',
-        company: 'Tech Corp',
-        location: 'Remote',
-        description:
-            'Looking for an experienced Flutter developer to build mobile apps.',
-        salary: '\$80k - \$120k',
-        type: 'Full-time',
-        postedDate: DateTime.now().subtract(Duration(days: 2)),
-      ),
-      Job(
-        id: '2',
-        title: 'UI/UX Designer',
-        company: 'Design Studio',
-        location: 'New York, NY',
-        description:
-            'Creative UI/UX designer needed for various client projects.',
-        salary: '\$70k - \$100k',
-        type: 'Contract',
-        postedDate: DateTime.now().subtract(Duration(days: 5)),
-      ),
-      Job(
-        id: '3',
-        title: 'Backend Developer',
-        company: 'StartupXYZ',
-        location: 'San Francisco, CA',
-        description:
-            'Join our team to build scalable backend services using .NET.',
-        salary: '\$90k - \$130k',
-        type: 'Full-time',
-        postedDate: DateTime.now().subtract(Duration(days: 1)),
-      ),
-      Job(
-        id: '4',
-        title: 'Project Manager',
-        company: 'Business Solutions Inc',
-        location: 'Austin, TX',
-        description:
-            'Manage multiple projects and coordinate with development teams.',
-        salary: '\$85k - \$115k',
-        type: 'Full-time',
-        postedDate: DateTime.now().subtract(Duration(days: 3)),
-      ),
-    ];
+    final jobs = _filteredJobs;
 
     return Scaffold(
       appBar: AppBar(
@@ -69,9 +70,20 @@ class JobSeekingPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _searchQuery = value),
                     decoration: InputDecoration(
                       hintText: 'Search jobs...',
                       prefixIcon: Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,
@@ -83,13 +95,40 @@ class JobSeekingPage extends StatelessWidget {
                 ),
                 SizedBox(width: 8),
                 IconButton(
-                  icon: Icon(Icons.filter_list),
-                  onPressed: () {},
+                  icon: Icon(Icons.refresh),
+                  onPressed: _loadJobs,
                   style: IconButton.styleFrom(backgroundColor: Colors.white),
                 ),
               ],
             ),
           ),
+          if (_isLoading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_errorMessage != null)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    SizedBox(height: 12),
+                    Text(_errorMessage!, textAlign: TextAlign.center),
+                    SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadJobs,
+                      child: Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (jobs.isEmpty)
+            const Expanded(
+              child: Center(child: Text('No jobs found.')),
+            )
+          else
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(16),

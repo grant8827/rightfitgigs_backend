@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '12.0'
+platform :ios, '13.0'
 
 # Enable modular headers for all pods (required for Swift pods with dependencies)
 use_modular_headers!

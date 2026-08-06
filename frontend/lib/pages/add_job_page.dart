@@ -4,9 +4,17 @@ import '../models/job.dart';
 
 class AddJobPage extends StatefulWidget {
   final String employerName;
+  final String employerId;
+  final String companyName;
   final Job? jobToEdit;
 
-  const AddJobPage({super.key, required this.employerName, this.jobToEdit});
+  const AddJobPage({
+    super.key,
+    required this.employerName,
+    required this.employerId,
+    required this.companyName,
+    this.jobToEdit,
+  });
 
   @override
   State<AddJobPage> createState() => _AddJobPageState();
@@ -22,6 +30,7 @@ class _AddJobPageState extends State<AddJobPage> {
   String _selectedType = 'Full-time';
   String _selectedIndustry = 'Technology';
   String _selectedExperienceLevel = 'Mid-level';
+  String _selectedEducationLevel = 'Bachelor';
   String _selectedWorkType = 'In Person';
   String _selectedSalaryFrequency = 'Monthly';
   bool _isRemote = false;
@@ -46,9 +55,19 @@ class _AddJobPageState extends State<AddJobPage> {
     _selectedType = job.type;
     _selectedIndustry = job.industry ?? 'Technology';
     _selectedExperienceLevel = job.experienceLevel ?? 'Mid-level';
+    _selectedEducationLevel = job.educationLevel ?? 'Bachelor';
     _isRemote = job.isRemote;
     _isUrgentlyHiring = job.isUrgentlyHiring;
     _isSeasonal = job.isSeasonal;
+  }
+
+  String get _resolvedCompanyName {
+    final profileCompanyName = widget.companyName.trim();
+    if (profileCompanyName.isNotEmpty) {
+      return profileCompanyName;
+    }
+
+    return widget.jobToEdit?.company.trim() ?? '';
   }
 
   final List<String> _jobTypes = [
@@ -79,6 +98,14 @@ class _AddJobPageState extends State<AddJobPage> {
     'Executive',
   ];
 
+  final List<String> _educationLevels = [
+    'Certificate',
+    'Associate',
+    'Bachelor',
+    'Masters',
+    'PhD',
+  ];
+
   final List<String> _workTypes = ['In Person', 'Remote'];
 
   final List<String> _salaryFrequencies = ['Weekly', 'Fortnightly', 'Monthly'];
@@ -97,6 +124,19 @@ class _AddJobPageState extends State<AddJobPage> {
       return;
     }
 
+    final companyName = _resolvedCompanyName;
+    if (companyName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please add your company name in the company profile first.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -109,13 +149,15 @@ class _AddJobPageState extends State<AddJobPage> {
         await ApiService.updateJob(
           id: widget.jobToEdit!.id,
           title: _titleController.text.trim(),
-          company: widget.employerName,
+          company: companyName,
+          employerId: widget.employerId,
           location: _locationController.text.trim(),
           description: _descriptionController.text.trim(),
           salary: _salaryController.text.trim(),
           type: _selectedType,
           industry: _selectedIndustry,
           experienceLevel: _selectedExperienceLevel,
+          educationLevel: _selectedEducationLevel,
           isRemote: _isRemote,
           isUrgentlyHiring: _isUrgentlyHiring,
           isSeasonal: _isSeasonal,
@@ -124,13 +166,15 @@ class _AddJobPageState extends State<AddJobPage> {
         // Create new job
         await ApiService.createJob(
           title: _titleController.text.trim(),
-          company: widget.employerName,
+          company: companyName,
+          employerId: widget.employerId,
           location: _locationController.text.trim(),
           description: _descriptionController.text.trim(),
           salary: _salaryController.text.trim(),
           type: _selectedType,
           industry: _selectedIndustry,
           experienceLevel: _selectedExperienceLevel,
+          educationLevel: _selectedEducationLevel,
           isRemote: _isRemote,
           isUrgentlyHiring: _isUrgentlyHiring,
           isSeasonal: _isSeasonal,
@@ -397,6 +441,18 @@ class _AddJobPageState extends State<AddJobPage> {
                   });
                 },
               ),
+              const SizedBox(height: 15),
+
+              _buildDropdown(
+                label: 'Education Level',
+                value: _selectedEducationLevel,
+                items: _educationLevels,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedEducationLevel = value!;
+                  });
+                },
+              ),
               const SizedBox(height: 30),
 
               // Job Options
@@ -501,7 +557,9 @@ class _AddJobPageState extends State<AddJobPage> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text('${widget.employerName} • $_selectedType'),
+                      Text(
+                        '${_resolvedCompanyName.isEmpty ? 'Company name required' : _resolvedCompanyName} • $_selectedType',
+                      ),
                       Text(
                         _locationController.text.isEmpty
                             ? 'Location'

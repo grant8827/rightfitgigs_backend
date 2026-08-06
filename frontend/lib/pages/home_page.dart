@@ -1,12 +1,75 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:frontend/pages/hiring_page.dart';
-import 'package:frontend/pages/join_rightfit_gigs_page.dart';
-import 'package:frontend/pages/employer_registration_page.dart';
-import 'package:frontend/pages/worker_registration_page.dart';
-import 'package:frontend/widgets/mobile_ads_bundle.dart';
+import 'package:rightfitgigs/pages/join_rightfit_gigs_page.dart';
+import 'package:rightfitgigs/pages/employer_registration_page.dart';
+import 'package:rightfitgigs/pages/worker_registration_page.dart';
+import 'package:rightfitgigs/widgets/mobile_ads_bundle.dart';
+import '../api_service.dart';
 
-class LandingHomePage extends StatelessWidget {
-  const LandingHomePage({super.key});
+class LandingHomePage extends StatefulWidget {
+  final void Function(int)? onSwitchTab;
+  const LandingHomePage({super.key, this.onSwitchTab});
+
+  @override
+  State<LandingHomePage> createState() => _LandingHomePageState();
+}
+
+class _LandingHomePageState extends State<LandingHomePage> {
+  List<dynamic> _recentActivity = [];
+  Map<String, dynamic> _stats = {};
+  Timer? _timer;
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    if (mounted) setState(() { _isLoading = true; _hasError = false; });
+    try {
+      final statsData = await ApiService.getPlatformStats();
+      if (mounted) {
+        setState(() {
+          _stats = statsData;
+        });
+      }
+    } catch (e) {
+      print('DEBUG stats error: $e');
+      if (mounted) setState(() { _hasError = true; });
+    }
+
+    try {
+      final activity = await ApiService.getRecentActivity();
+      if (mounted) {
+        setState(() {
+          _recentActivity = activity;
+        });
+      }
+    } catch (e) {
+      print('DEBUG activity error: $e');
+    }
+
+    if (mounted) setState(() { _isLoading = false; });
+  }
+
+  IconData _iconFromString(String? icon) {
+    switch (icon) {
+      case 'add_circle_outline': return Icons.add_circle_outline;
+      case 'person_outline':     return Icons.person_outline;
+      case 'business_outlined':  return Icons.business_outlined;
+      default:                   return Icons.info_outline;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,12 +134,7 @@ class LandingHomePage extends StatelessWidget {
                         Colors.blue.shade600,
                         Colors.white,
                         () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HiringPage(),
-                            ),
-                          );
+                          widget.onSwitchTab?.call(1);
                         },
                       ),
                     ),
@@ -106,19 +164,27 @@ class LandingHomePage extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard('Active Jobs', '1,247', Icons.work),
+                      child: _buildStatCard(
+                        'Active Jobs',
+                        _stats['activeJobs']?.toString() ?? '—',
+                        Icons.work,
+                      ),
                     ),
                     SizedBox(width: 12),
                     Expanded(
                       child: _buildStatCard(
                         'Candidates',
-                        '8,930',
+                        _stats['totalCandidates']?.toString() ?? '—',
                         Icons.people,
                       ),
                     ),
                     SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard('Companies', '562', Icons.business),
+                      child: _buildStatCard(
+                        'Companies',
+                        _stats['totalCompanies']?.toString() ?? '—',
+                        Icons.business,
+                      ),
                     ),
                   ],
                 ),
@@ -132,33 +198,49 @@ class LandingHomePage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Recent Activity',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Activity',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.refresh, color: Colors.blue.shade600),
+                      onPressed: _refresh,
+                      tooltip: 'Refresh',
+                    ),
+                  ],
                 ),
                 SizedBox(height: 16),
-                _buildActivityItem(
-                  'New job posted: Senior Flutter Developer',
-                  'Tech Corp',
-                  '2 hours ago',
-                  Icons.add_circle_outline,
-                ),
-                _buildActivityItem(
-                  'Profile updated: UI/UX Designer available',
-                  'Sarah Johnson',
-                  '4 hours ago',
-                  Icons.person_outline,
-                ),
-                _buildActivityItem(
-                  'New company joined: Mobile Solutions Inc.',
-                  'Mobile Solutions',
-                  '1 day ago',
-                  Icons.business_outlined,
-                ),
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (_hasError || _recentActivity.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      _hasError
+                          ? 'Could not load activity. Tap refresh to try again.'
+                          : 'No recent activity yet.',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                else
+                  ..._recentActivity.map((item) => _buildActivityItem(
+                        item['title'] ?? '',
+                        item['subtitle'] ?? '',
+                        item['time'] ?? '',
+                        _iconFromString(item['icon']),
+                      )),
               ],
             ),
           ),
@@ -197,12 +279,7 @@ class LandingHomePage extends StatelessWidget {
                   'Explore available job opportunities',
                   Icons.search,
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HiringPage(),
-                      ),
-                    );
+                    widget.onSwitchTab?.call(1);
                   },
                 ),
                 SizedBox(height: 12),

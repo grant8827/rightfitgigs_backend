@@ -5,18 +5,20 @@ import '../api_service.dart';
 import '../models/job.dart';
 import '../models/application.dart';
 import 'messages_page.dart';
+import 'worker_profile_page.dart';
 import '../widgets/notification_bell.dart';
 import 'dart:async';
 
 class WorkerDashboardPage extends StatefulWidget {
-  const WorkerDashboardPage({super.key});
+  final int initialIndex;
+  const WorkerDashboardPage({super.key, this.initialIndex = 0});
 
   @override
   State<WorkerDashboardPage> createState() => _WorkerDashboardPageState();
 }
 
 class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   List<Job> _jobs = [];
   List<Application> _applications = [];
   bool _isLoadingJobs = false;
@@ -42,6 +44,7 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     _loadJobs();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadApplications();
@@ -241,22 +244,12 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
             ),
             itemBuilder: (context) => [
               const PopupMenuItem<String>(
-                value: 'profile',
+                value: 'home',
                 child: Row(
                   children: [
-                    Icon(Icons.person),
+                    Icon(Icons.home),
                     SizedBox(width: 8),
-                    Text('Profile'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings),
-                    SizedBox(width: 8),
-                    Text('Settings'),
+                    Text('Home'),
                   ],
                 ),
               ),
@@ -274,17 +267,16 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
             ],
             onSelected: (value) {
               switch (value) {
-                case 'profile':
-                  // TODO: Navigate to profile page
-                  break;
-                case 'settings':
-                  // TODO: Navigate to settings page
+                case 'home':
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/home', (route) => false);
                   break;
                 case 'logout':
                   userProvider.logout();
                   Navigator.of(
                     context,
-                  ).pushNamedAndRemoveUntil('/', (route) => false);
+                  ).pushNamedAndRemoveUntil('/home', (route) => false);
                   break;
               }
             },
@@ -344,6 +336,16 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
             type: BottomNavigationBarType.fixed,
             currentIndex: _selectedIndex,
             onTap: (index) {
+              if (index == 4) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const WorkerProfilePage(),
+                  ),
+                );
+                return;
+              }
+
               setState(() {
                 if (index == 3 && _selectedIndex != 3) {
                   // Force MessagesPage remount to reload conversations
@@ -351,6 +353,17 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                 }
                 _selectedIndex = index;
               });
+              // Start/stop applications polling based on tab
+              if (index == 2 && _applicationsPollingTimer == null) {
+                _loadApplications();
+                _applicationsPollingTimer = Timer.periodic(
+                  const Duration(seconds: 30),
+                  (_) => _loadApplications(),
+                );
+              } else if (index != 2 && _applicationsPollingTimer != null) {
+                _applicationsPollingTimer?.cancel();
+                _applicationsPollingTimer = null;
+              }
             },
             selectedItemColor: Colors.blue.shade600,
             unselectedItemColor: Colors.grey,
@@ -847,18 +860,6 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
   }
 
   Widget _buildApplications() {
-    // Start polling when Applications tab is selected
-    if (_selectedIndex == 2 && _applicationsPollingTimer == null) {
-      _loadApplications();
-      _applicationsPollingTimer = Timer.periodic(
-        const Duration(seconds: 5),
-        (_) => _loadApplications(),
-      );
-    } else if (_selectedIndex != 2 && _applicationsPollingTimer != null) {
-      _applicationsPollingTimer?.cancel();
-      _applicationsPollingTimer = null;
-    }
-
     return Column(
       children: [
         Padding(
@@ -962,6 +963,8 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
@@ -999,6 +1002,8 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                 color: Colors.blue.shade700,
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
             Row(
@@ -1009,16 +1014,22 @@ class _WorkerDashboardPageState extends State<WorkerDashboardPage> {
                   color: Colors.grey.shade600,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  'Applied: ${_formatDate(application.appliedDate)}',
-                  style: TextStyle(color: Colors.grey.shade600),
+                Flexible(
+                  child: Text(
+                    'Applied: ${_formatDate(application.appliedDate)}',
+                    style: TextStyle(color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Icon(Icons.update, size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 4),
-                Text(
-                  'Updated: ${_formatDate(application.updatedDate)}',
-                  style: TextStyle(color: Colors.grey.shade600),
+                Flexible(
+                  child: Text(
+                    'Updated: ${_formatDate(application.updatedDate)}',
+                    style: TextStyle(color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
